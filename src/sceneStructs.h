@@ -66,11 +66,6 @@ struct PathSegment {
 	int remainingBounces;
 };
 
-enum MaterialShadingTechnique {
-	PHONG_DIFFUSE,
-	PHONG_SPECULAR
-};
-
 // Use with a corresponding PathSegment to do:
 // 1) color contribution computation
 // 2) BSDF evaluation: generate a new ray

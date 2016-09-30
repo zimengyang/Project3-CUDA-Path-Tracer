@@ -143,12 +143,17 @@ __global__ void generateRayFromCamera(Camera cam, int iter, int traceDepth, Path
 	}
 }
 
+// TODO: 
+// pathTraceOneBounce handles ray intersections, generate intersections for shading, 
+// and scatter new ray. You might want to call scatterRay from interactions.h
 __global__ void pathTraceOneBounce(
 	int depth
 	, int num_paths
 	, PathSegment * pathSegments
 	, Geom * geoms
 	, int geoms_size
+	, Material * materials
+	, int material_size
 	, ShadeableIntersection * intersections
 	)
 {
@@ -201,6 +206,10 @@ __global__ void pathTraceOneBounce(
 				normal = tmp_normal;
 			}
 		}
+
+
+		// TODO: scatter the ray, generate intersections for shading
+		// feel free to modify the code below
 
 		if (hit_geom_index == -1)
 		{
@@ -442,15 +451,40 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 			dev_materials,
 			dev_image
 			);
+	// tracing
+	dim3 numblocksPathSegmentTracing = (num_paths + blockSize1d - 1) / blockSize1d;
+	pathTraceOneBounce <<<numblocksPathSegmentTracing, blockSize1d>>> (
+		depth
+		, num_paths
+		, dev_paths
+		, dev_geoms
+		, hst_scene->geoms.size()
+		, dev_materials
+		, hst_scene->materials.size()
+		, dev_intersections
+		);
+	checkCUDAError("trace one bounce");
+	cudaDeviceSynchronize();
+	depth++;
 
-		// terminate path that has no intersection
-		PathSegment * newPathEnd = thrust::remove_if(thrust::device, dev_paths, dev_paths + remainingNumPaths, dev_intersections, terminate_path());
-		if (!newPathEnd)
-			remainingNumPaths = 0;
-		else
-			remainingNumPaths = newPathEnd - dev_paths;
 
-		iterationComplete = (remainingNumPaths <= 0 || depth >= traceDepth); // TODO: should be based off stream compaction results.
+	// TODO:
+	// --- Shading Stage ---
+	// Shade path segments based on intersections and generate new rays by
+  // evaluating the BSDF.
+  // Start off with just a big kernel that handles all the different
+  // materials you have in the scenefile.
+  // TODO: compare between directly shading the path segments and shading
+  // path segments that have been reshuffled to be contiguous in memory.
+
+  shadeFakeMaterial<<<numblocksPathSegmentTracing, blockSize1d>>> (
+    iter,
+    num_paths,
+    dev_intersections,
+    dev_paths,
+    dev_materials
+  );
+  iterationComplete = true; // TODO: should be based off stream compaction results.
 	}
 
 	// Assemble this iteration and apply it to the image
