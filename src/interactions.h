@@ -77,4 +77,44 @@ void scatterRay(
     // TODO: implement this.
     // A basic implementation of pure-diffuse shading will just call the
     // calculateRandomDirectionInHemisphere defined above.
+
+	// consider the material as - diffuse/reflection/refraction,
+	// three possibilities add up to 1
+	// diffuse possibility = 1 - material.hasReflection - material.hasRefraction
+
+	thrust::uniform_real_distribution<float> u01(0, 1);
+	float prob = u01(rng);
+
+	// diffuse, reflection, refraction
+	float bsdfProb[3] = {1 - m.hasReflective - m.hasRefractive, m.hasReflective, m.hasRefractive };
+	int index = 0;
+	float bsdfCDF = 0;
+	for (int i = 0; i < 3; ++i)
+	{
+		if (prob > bsdfCDF && prob <= bsdfCDF + bsdfProb[i])
+		{
+			index = i;
+			break;
+		}
+		bsdfCDF += bsdfProb[i];
+	}
+
+	// calculate and assign new ray direction
+	glm::vec3 dir;
+	switch (index)
+	{
+	case 1: // specular-reflective
+		dir = glm::reflect(ray.direction, normal);
+		break;
+	case 2: // specular-refractive
+		dir = glm::refract(ray.direction, normal, m.indexOfRefraction);
+		break;
+	default: // diffuse
+		dir = calculateRandomDirectionInHemisphere(normal, rng);
+		break;
+	}
+
+	ray.direction = dir;
+	ray.origin = intersect + 1e-3f * ray.direction;
+	color = m.color;
 }

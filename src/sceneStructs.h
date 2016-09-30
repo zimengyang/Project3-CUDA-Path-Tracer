@@ -61,7 +61,7 @@ struct RenderState {
 
 struct PathSegment {
 	Ray ray;
-  glm::vec3 color;
+	glm::vec3 color;
 	int pixelIndex;
 	int remainingBounces;
 };
@@ -75,7 +75,7 @@ enum MaterialShadingTechnique {
 // 1) color contribution computation
 // 2) BSDF evaluation: generate a new ray
 struct ShadeableIntersection {
-  float t;
-  glm::vec3 surfaceNormal;
-  int materialId;
+	float t;
+	glm::vec3 surfaceNormal;
+	int materialId;
 };
