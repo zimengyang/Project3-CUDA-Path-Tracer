@@ -98,22 +98,26 @@ void scatterRay(
 		bsdfCDF += bsdfProb[i];
 	}
 
+	glm::vec3 color = glm::vec3(1,1,1);
+	glm::vec3 rayD = pathSegment.ray.direction;
 	// calculate and assign new ray direction
 	glm::vec3 dir;
 	switch (index)
 	{
 	case 1: // specular-reflective
-		dir = glm::reflect(ray.direction, normal);
+		dir = glm::reflect(pathSegment.ray.direction, normal);
+		color = m.color * m.specular.color;
 		break;
-	case 2: // specular-refractive
-		dir = glm::refract(ray.direction, normal, m.indexOfRefraction);
+	case 2: // TODO : specular-refractive
+		
 		break;
 	default: // diffuse
 		dir = calculateRandomDirectionInHemisphere(normal, rng);
+		color = m.color;
 		break;
 	}
 
-	ray.direction = dir;
-	ray.origin = intersect + 1e-3f * ray.direction;
-	color = m.color;
+	pathSegment.ray.direction = glm::normalize(dir);
+	pathSegment.ray.origin = intersect + 1e-3f * pathSegment.ray.direction;
+	pathSegment.color *= color;
 }

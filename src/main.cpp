@@ -42,6 +42,8 @@ int main(int argc, char** argv) {
 
     // Load scene file
     scene = new Scene(sceneFile);
+	scene->state.reshuffleByMaterialIDs = false;
+	scene->state.useFirstBounceIntersectionCache = true;
 
     // Set up camera stuff from loaded path tracer settings
     iteration = 0;
@@ -134,6 +136,7 @@ void runCuda() {
 
         // execute the kernel
         int frame = 0;
+
         pathtrace(pbo_dptr, frame, iteration);
 
         // unmap buffer object

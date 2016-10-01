@@ -57,6 +57,9 @@ struct RenderState {
     int traceDepth;
     std::vector<glm::vec3> image;
     std::string imageName;
+
+	bool reshuffleByMaterialIDs;
+	bool useFirstBounceIntersectionCache;
 };
 
 struct PathSegment {
@@ -73,4 +76,5 @@ struct ShadeableIntersection {
 	float t;
 	glm::vec3 surfaceNormal;
 	int materialId;
+	int hit_geom_index;
 };

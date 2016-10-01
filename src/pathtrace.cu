@@ -4,6 +4,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/random.h>
 #include <thrust/remove.h>
+#include <thrust/sort.h>
 
 #include "sceneStructs.h"
 #include "scene.h"
@@ -73,8 +74,14 @@ static Geom * dev_geoms = NULL;
 static Material * dev_materials = NULL;
 static PathSegment * dev_paths = NULL;
 static ShadeableIntersection * dev_intersections = NULL;
+
 // TODO: static variables for device memory, any extra info you need, etc
 // ...
+static int * dev_materialIDs_1 = NULL;
+static int * dev_materialIDs_2 = NULL;
+
+// first bounce intersections cache
+static ShadeableIntersection * dev_first_bounce_intersections = NULL;
 
 void pathtraceInit(Scene *scene) {
 	hst_scene = scene;
@@ -96,6 +103,10 @@ void pathtraceInit(Scene *scene) {
 	cudaMemset(dev_intersections, 0, pixelcount * sizeof(ShadeableIntersection));
 
 	// TODO: initialize any extra device memeory you need
+	cudaMalloc(&dev_materialIDs_1, pixelcount * sizeof(int));
+	cudaMalloc(&dev_materialIDs_2, pixelcount * sizeof(int));
+
+	cudaMalloc(&dev_first_bounce_intersections, pixelcount * sizeof(ShadeableIntersection));
 
 	checkCUDAError("pathtraceInit");
 }
@@ -106,7 +117,11 @@ void pathtraceFree() {
 	cudaFree(dev_geoms);
 	cudaFree(dev_materials);
 	cudaFree(dev_intersections);
+
 	// TODO: clean up any extra device memory you created
+	cudaFree(dev_materialIDs_1);
+	cudaFree(dev_materialIDs_2);
+	cudaFree(dev_first_bounce_intersections);
 
 	checkCUDAError("pathtraceFree");
 }
@@ -163,13 +178,6 @@ __global__ void pathTraceOneBounce(
 	{
 		PathSegment pathSegment = pathSegments[path_index];
 
-		// check if remain bounces
-		if (pathSegment.remainingBounces <= 0)
-		{
-			intersections[path_index].t = -1.0f;
-			return;
-		}
-
 		float t;
 		glm::vec3 intersect_point;
 		glm::vec3 normal;
@@ -221,6 +229,7 @@ __global__ void pathTraceOneBounce(
 			intersections[path_index].t = t_min;
 			intersections[path_index].materialId = geoms[hit_geom_index].materialid;
 			intersections[path_index].surfaceNormal = normal;
+			intersections[path_index].hit_geom_index = hit_geom_index;
 		}
 	}
 }
@@ -234,8 +243,7 @@ __global__ void shadingAndEvaluatingBSDF(
 	int num_paths,
 	ShadeableIntersection * shadeableIntersections,
 	PathSegment * pathSegments,
-	Material * materials,
-	glm::vec3 * image)
+	Material * materials)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx >= num_paths)
@@ -250,81 +258,24 @@ __global__ void shadingAndEvaluatingBSDF(
 		glm::vec3 color;
 		if (material.emittance > 0) // light source
 		{
-			color = material.color * material.emittance;
+			pathSeg.color *= material.color * material.emittance;
 			pathSeg.remainingBounces = 0;
 		}
 		else // bounce ray
 		{
 			glm::vec3 intersectPoint = pathSeg.ray.origin + pathSeg.ray.direction * isx.t;
 			thrust::default_random_engine rng = makeSeededRandomEngine(iter, idx, 0);
-			scatterRay(pathSeg.ray, color, intersectPoint, isx.surfaceNormal, material, rng);
+			scatterRay(pathSeg, intersectPoint, isx.surfaceNormal, material, rng);
 			pathSeg.remainingBounces--;
-		}
-		
-		pathSeg.color *= (glm::abs(glm::dot(pathSeg.ray.direction, isx.surfaceNormal)) * color);
-		
+		}		
 	}
 	else // hit nothing
 	{
-		if (depth != 0)
-			image[pathSeg.pixelIndex] += pathSeg.color;
+		pathSeg.color = glm::vec3(0);
+		pathSeg.remainingBounces = 0;
 	}
 }
 
-
-
-// LOOK: "fake" shader demonstrating what you might do with the info in
-// a ShadeableIntersection, as well as how to use thrust's random number
-// generator. Observe that since the thrust random number generator basically
-// adds "noise" to the iteration, the image should start off noisy and get
-// cleaner as more iterations are computed.
-//
-// Note that this shader does NOT do a BSDF evaluation!
-// Your shaders should handle that - this can allow techniques such as
-// bump mapping.
-__global__ void shadeFakeMaterial(
-	int iter
-	, int num_paths
-	, ShadeableIntersection * shadeableIntersections
-	, PathSegment * pathSegments
-	, Material * materials
-	)
-{
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx < num_paths)
-	{
-		ShadeableIntersection intersection = shadeableIntersections[idx];
-		if (intersection.t > 0.0f) { // if the intersection exists...
-			// Set up the RNG
-			thrust::default_random_engine rng = makeSeededRandomEngine(iter, idx, 0);
-			thrust::uniform_real_distribution<float> u01(0, 1);
-
-			Material material = materials[intersection.materialId];
-			glm::vec3 materialColor = material.color;
-
-			// If the material indicates that the object was a light, "light" the ray
-			if (material.emittance > 0.0f) {
-				pathSegments[idx].color *= (materialColor * material.emittance);
-			}
-			// Otherwise, do some pseudo-lighting computation. This is actually more
-			// like what you would expect from shading in a rasterizer like OpenGL.
-			else {
-				float lightTerm = glm::dot(intersection.surfaceNormal, glm::vec3(0.0f, 1.0f, 0.0f));
-				pathSegments[idx].color *= (materialColor * lightTerm) * 0.3f + ((1.0f - intersection.t * 0.02f) * materialColor) * 0.7f;
-				pathSegments[idx].color *= u01(rng); // apply some noise because why not
-			}
-			// If there was no intersection, color the ray black.
-			// Lots of renderers use 4 channel color, RGBA, where A = alpha, often
-			// used for opacity, in which case they can indicate "no opacity".
-			// This can be useful for post-processing and image compositing.
-		}
-		else // hit nothing 
-		{
-			pathSegments[idx].color = glm::vec3(0.0f);
-		}
-
-	}
-}
 
 // Add the current iteration's output to the overall image
 __global__ void finalGather(int nPaths, glm::vec3 * image, PathSegment * iterationPaths)
@@ -338,18 +289,40 @@ __global__ void finalGather(int nPaths, glm::vec3 * image, PathSegment * iterati
 	}
 }
 
+// update terminated segments to image
+__global__ void kernUpdateTerminatedSegmentsToImage(
+	int nPaths, glm::vec3 * image, PathSegment * iterationPaths)
+{
+	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+	if (index < nPaths && iterationPaths[index].remainingBounces <= 0)
+	{
+		PathSegment iterationPath = iterationPaths[index];
+		image[iterationPath.pixelIndex] += iterationPath.color;
+	}
+}
 /**
  * predictor for thrust::remove_if
  */
 struct terminate_path
 {
 	__host__ __device__
-	bool operator()(const ShadeableIntersection& intersect)
+	bool operator()(const PathSegment & pathSeg)
 	{
-		return intersect.t <= 0.0f;
+		return (pathSeg.remainingBounces <= 0);
 	}
 };
 
+__global__ void kernGetMaterialIDs(
+	int nPaths, int * dev_materialIDs1, int * dev_materialIDs2, ShadeableIntersection * intersections)
+{
+	int index = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+	if (index >= nPaths)
+		return;
+
+	dev_materialIDs2[index] = dev_materialIDs1[index] = intersections[index].materialId;
+}
 
 
 /**
@@ -360,6 +333,8 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 	const int traceDepth = hst_scene->state.traceDepth;
 	const Camera &cam = hst_scene->state.camera;
 	const int pixelcount = cam.resolution.x * cam.resolution.y;
+	const bool reshuffleByMaterialIDs = hst_scene->state.reshuffleByMaterialIDs;
+	const bool useFirstBounceIntersectionCache = hst_scene->state.useFirstBounceIntersectionCache;
 
 	// 2D block for generating ray from camera
 	const dim3 blockSize2d(8, 8);
@@ -413,23 +388,43 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 
 	bool iterationComplete = false;
 	int remainingNumPaths = num_paths;
+	dim3 numblocksPathSegmentTracing;
 	while (!iterationComplete) {
 
 		// clean shading chunks
 		cudaMemset(dev_intersections, 0, pixelcount * sizeof(ShadeableIntersection));
+		numblocksPathSegmentTracing = (remainingNumPaths + blockSize1d - 1) / blockSize1d;
 
-		// tracing
-		dim3 numblocksPathSegmentTracing = (remainingNumPaths + blockSize1d - 1) / blockSize1d;
-		pathTraceOneBounce << <numblocksPathSegmentTracing, blockSize1d >> > (
-			depth
-			, remainingNumPaths
-			, dev_paths
-			, dev_geoms
-			, hst_scene->geoms.size()
-			, dev_intersections
-			);
-		checkCUDAError("trace one bounce");
-		cudaDeviceSynchronize();
+		// first bounce caching related, so ugly
+		if (!useFirstBounceIntersectionCache ||
+			(useFirstBounceIntersectionCache && ((depth == 0 && iter == 1) || (depth > 0)))
+			)
+		{
+			// tracing
+			pathTraceOneBounce << <numblocksPathSegmentTracing, blockSize1d >> > (
+				depth
+				, remainingNumPaths
+				, dev_paths
+				, dev_geoms
+				, hst_scene->geoms.size()
+				, dev_materials
+				, hst_scene->materials.size()
+				, dev_intersections
+				);
+			checkCUDAError("trace one bounce");
+			cudaDeviceSynchronize();
+		}
+
+		if (useFirstBounceIntersectionCache && (depth == 0 && iter == 1))
+		{
+			cudaMemcpy(dev_first_bounce_intersections, dev_intersections, remainingNumPaths * sizeof(ShadeableIntersection), cudaMemcpyDeviceToDevice);
+		}
+		
+		if (useFirstBounceIntersectionCache && (depth == 0 && iter > 1))
+		{
+			cudaMemcpy(dev_intersections, dev_first_bounce_intersections, remainingNumPaths * sizeof(ShadeableIntersection), cudaMemcpyDeviceToDevice);
+		}
+
 		depth++;
 
 
@@ -441,50 +436,57 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		// materials you have in the scenefile.
 		// TODO: compare between directly shading the path segments and shading
 		// path segments that have been reshuffled to be contiguous in memory.
+		
+		if (reshuffleByMaterialIDs)
+		{
+			// after tracing one bounce , get materialIDs for reshuffling intersections and pathSegmetns
+			kernGetMaterialIDs << <numblocksPathSegmentTracing, blockSize1d >> >(
+				remainingNumPaths,
+				dev_materialIDs_1,
+				dev_materialIDs_2,
+				dev_intersections
+				);
 
+			thrust::sort_by_key(thrust::device, dev_materialIDs_1, dev_materialIDs_1 + remainingNumPaths, dev_paths);
+			thrust::sort_by_key(thrust::device, dev_materialIDs_2, dev_materialIDs_2 + remainingNumPaths, dev_intersections);
+		}
+
+		// shading and generate new directions using BSDF evaluation
 		shadingAndEvaluatingBSDF << <numblocksPathSegmentTracing, blockSize1d >> > (
 			iter,
 			depth,
 			remainingNumPaths,
 			dev_intersections,
 			dev_paths,
-			dev_materials,
-			dev_image
+			dev_materials
 			);
-	// tracing
-	dim3 numblocksPathSegmentTracing = (num_paths + blockSize1d - 1) / blockSize1d;
-	pathTraceOneBounce <<<numblocksPathSegmentTracing, blockSize1d>>> (
-		depth
-		, num_paths
-		, dev_paths
-		, dev_geoms
-		, hst_scene->geoms.size()
-		, dev_materials
-		, hst_scene->materials.size()
-		, dev_intersections
-		);
-	checkCUDAError("trace one bounce");
-	cudaDeviceSynchronize();
-	depth++;
+		checkCUDAError("shading");
+		cudaDeviceSynchronize();
 
+		// update terminated segments to final image
+		kernUpdateTerminatedSegmentsToImage << <numblocksPathSegmentTracing, blockSize1d >> >(
+			remainingNumPaths,
+			dev_image,
+			dev_paths
+			);
+		checkCUDAError("udpate terminated segments");
+		cudaDeviceSynchronize();
 
-	// TODO:
-	// --- Shading Stage ---
-	// Shade path segments based on intersections and generate new rays by
-  // evaluating the BSDF.
-  // Start off with just a big kernel that handles all the different
-  // materials you have in the scenefile.
-  // TODO: compare between directly shading the path segments and shading
-  // path segments that have been reshuffled to be contiguous in memory.
+		// stream compaction, delete that paths that remainingBounces <= 0
+		//std::cout << "before compaction = " << remainingNumPaths;
+		PathSegment *newPathEnd = thrust::remove_if(thrust::device, dev_paths, dev_paths + remainingNumPaths, terminate_path());
+		if (newPathEnd != NULL)
+		{
+			remainingNumPaths = newPathEnd - dev_paths;
+		}
+		else
+		{
+			remainingNumPaths = 0;
+		}
+		checkCUDAError("thrust::remove_if");
+		//std::cout << ", after compaction = " << remainingNumPaths << std::endl;
 
-  shadeFakeMaterial<<<numblocksPathSegmentTracing, blockSize1d>>> (
-    iter,
-    num_paths,
-    dev_intersections,
-    dev_paths,
-    dev_materials
-  );
-  iterationComplete = true; // TODO: should be based off stream compaction results.
+		iterationComplete = (depth >= traceDepth || remainingNumPaths <= 0); // TODO: should be based off stream compaction results.
 	}
 
 	// Assemble this iteration and apply it to the image
