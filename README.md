@@ -12,10 +12,20 @@ CUDA Path Tracer
   * [x] path termination using stream compaction
   * [x] toggleable method of sorting path/intersection continuous by material type
   * [x] toggleable method of using first bounce caching
-* [] Part 2
-* [] reduce noise
+* [ ] Part 2
+* [ ] reduce noise
+* [ ] artifacts ? 
+* [ ] performace anylasis for `reshuffleByMaterialIDs` and `useFirstBounceIntersectionCache`
 
 ## Part1 - Core Features
+| transmission test |
+|----|
+|![](renderings/roadmap_cornell_0.8Rf_0.1Rl_0.1Di_perfect_transmission_3392sample.png)|
+* Iterations: ~3300
+* Test render for:
+  * perfect transmission (right sphere): 1.0 refraction
+  * weighted material (left sphere): 0.8 refraction + 0.1 reflection + 0.1 diffuse
+
 |diffuse|perfect-specular and imperfect-specular|
 |------|------|
 |![](renderings/roadmap_cornell_diffuse_2008sample.png)|![](renderings/roadmap_cornell_imperfect_specular_2000sample.png)|
