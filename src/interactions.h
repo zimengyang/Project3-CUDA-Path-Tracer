@@ -109,7 +109,18 @@ void scatterRay(
 		color = m.color * m.specular.color;
 		break;
 	case 2: // TODO : specular-refractive
-		
+		if (glm::dot(normal, rayD) < 0) // entering object
+		{
+			dir = glm::refract(rayD, normal, 1.0f / m.indexOfRefraction);
+		}
+		else // leaving object
+		{
+			dir = glm::refract(rayD, normal, m.indexOfRefraction);
+		}
+
+		if (glm::length(dir) < 1e-4f)
+			dir = glm::reflect(rayD, normal);
+		color = m.color * m.specular.color;
 		break;
 	default: // diffuse
 		dir = calculateRandomDirectionInHemisphere(normal, rng);

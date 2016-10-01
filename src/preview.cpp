@@ -10,6 +10,11 @@ GLuint displayImage;
 
 GLFWwindow *window;
 
+// timer for cuda
+cudaEvent_t startEvent;
+cudaEvent_t stopEvent;
+float totalTime;
+
 std::string currentTimeString() {
     time_t now;
     time(&now);
@@ -110,6 +115,13 @@ void initCuda() {
     atexit(cleanupCuda);
 }
 
+void initCudaTimerEvent()
+{
+	// set up cuda event for timing
+	cudaEventCreate(&startEvent);
+	cudaEventCreate(&stopEvent);
+}
+
 void initPBO() {
     // set up vertex data parameter
     int num_texels = width * height;
@@ -161,6 +173,7 @@ bool init() {
     initCuda();
     initPBO();
     GLuint passthroughProgram = initShader();
+	initCudaTimerEvent(); // init cuda timer
 
     glUseProgram(passthroughProgram);
     glActiveTexture(GL_TEXTURE0);
@@ -169,11 +182,21 @@ bool init() {
 }
 
 void mainLoop() {
+	float dt;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        runCuda();
 
+		cudaEventRecord(startEvent, 0);
+        runCuda();
+		cudaEventRecord(stopEvent, 0);
+		cudaEventSynchronize(stopEvent);
+		cudaEventElapsedTime(&dt, startEvent, stopEvent);
+
+		totalTime += dt;
         string title = "CIS565 Path Tracer | " + utilityCore::convertIntToString(iteration) + " Iterations";
+		title += " | Average Iteration Time = " + utilityCore::convertFloatToString(totalTime / float(iteration));
+
         glfwSetWindowTitle(window, title.c_str());
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);

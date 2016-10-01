@@ -43,10 +43,11 @@ int main(int argc, char** argv) {
     // Load scene file
     scene = new Scene(sceneFile);
 	scene->state.reshuffleByMaterialIDs = false;
-	scene->state.useFirstBounceIntersectionCache = true;
+	scene->state.useFirstBounceIntersectionCache = false;
 
     // Set up camera stuff from loaded path tracer settings
     iteration = 0;
+	totalTime = 0;
     renderState = &scene->state;
     Camera &cam = renderState->camera;
     width = cam.resolution.x;
@@ -103,6 +104,7 @@ void saveImage() {
 void runCuda() {
     if (camchanged) {
         iteration = 0;
+		totalTime = 0;
         Camera &cam = renderState->camera;
         cameraPosition.x = zoom * sin(phi) * sin(theta);
         cameraPosition.y = zoom * cos(theta);
