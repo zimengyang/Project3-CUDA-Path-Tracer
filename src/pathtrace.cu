@@ -127,6 +127,32 @@ void pathtraceFree() {
 }
 
 /**
+* helper function for DOF
+* improvement for ConcentrixSampleDisc
+* reference : http://psgraphics.blogspot.com/2011/01/improved-code-for-concentric-map.html
+*/
+__device__ glm::vec2 ConcentricSampleDisc(float u1, float u2)
+{
+	float phi, r;
+	float a = 2.0f * u1 - 1.0f;
+	float b = 2.0f * u2 - 1.0f;
+
+	if (a*a > b*b)
+	{
+		r = a;
+		phi = (PI / 4.0f) *(b / a);
+	}
+	else
+	{
+		r = b;
+		phi = (PI / 2.0f) - (PI / 4.0f)*(a / b);
+	}
+
+	return glm::vec2(r*glm::cos(phi), r*glm::sin(phi));
+}
+
+
+/**
 * Generate PathSegments with rays from the camera through the screen into the
 * scene, which is the first bounce of rays.
 *
@@ -134,7 +160,9 @@ void pathtraceFree() {
 * motion blur - jitter rays "in time"
 * lens effect - jitter ray origin positions based on a lens
 */
-__global__ void generateRayFromCamera(Camera cam, int iter, int traceDepth, PathSegment* pathSegments)
+__global__ void generateRayFromCamera(
+	Camera cam, int iter, int traceDepth, PathSegment* pathSegments, 
+	bool stochasticAA)
 {
 	int x = (blockIdx.x * blockDim.x) + threadIdx.x;
 	int y = (blockIdx.y * blockDim.y) + threadIdx.y;
@@ -148,10 +176,42 @@ __global__ void generateRayFromCamera(Camera cam, int iter, int traceDepth, Path
 		//segment.color = glm::vec3(0, 0, 0);
 
 		// TODO: implement antialiasing by jittering the ray
-		segment.ray.direction = glm::normalize(cam.view
-			- cam.right * cam.pixelLength.x * ((float)x - (float)cam.resolution.x * 0.5f)
-			- cam.up * cam.pixelLength.y * ((float)y - (float)cam.resolution.y * 0.5f)
-			);
+		if (!stochasticAA)
+		{
+			segment.ray.direction = glm::normalize(cam.view
+				- cam.right * cam.pixelLength.x * ((float)x - (float)cam.resolution.x * 0.5f)
+				- cam.up * cam.pixelLength.y * ((float)y - (float)cam.resolution.y * 0.5f)
+				);
+		}
+		else
+		{
+			thrust::uniform_real_distribution<float> u01(0, 1);
+			thrust::default_random_engine rng = makeSeededRandomEngine(iter, index, 0);
+			float dx = u01(rng);
+			float dy = u01(rng);
+
+			float fx = (float)x + dx;
+			float fy = (float)y + dy;
+
+			segment.ray.direction = glm::normalize(cam.view
+				- cam.right * cam.pixelLength.x * ((float)fx - (float)cam.resolution.x * 0.5f)
+				- cam.up * cam.pixelLength.y * ((float)fy - (float)cam.resolution.y * 0.5f)
+				);
+		}
+
+		if (cam.DOF.x > 0.0f) // Depth of field
+		{
+			thrust::uniform_real_distribution<float> u01(0, 1);
+			thrust::default_random_engine rng = makeSeededRandomEngine(iter, index, 0);
+			glm::vec2 lenUV = ConcentricSampleDisc(u01(rng), u01(rng));
+			lenUV *= cam.DOF.x;
+			float ft = glm::abs(cam.DOF.y / cam.view.z);
+			glm::vec3 pfocus = segment.ray.direction * ft + segment.ray.origin;
+
+			segment.ray.origin += lenUV.x * cam.right + lenUV.y * cam.up;
+			segment.ray.direction = glm::normalize(pfocus - segment.ray.origin);
+		}
+
 
 		segment.pixelIndex = index;
 		segment.remainingBounces = traceDepth;
@@ -264,7 +324,7 @@ __global__ void shadingAndEvaluatingBSDF(
 		else // bounce ray
 		{
 			glm::vec3 intersectPoint = pathSeg.ray.origin + pathSeg.ray.direction * isx.t;
-			thrust::default_random_engine rng = makeSeededRandomEngine(iter, idx, 0);
+			thrust::default_random_engine rng = makeSeededRandomEngine(iter, idx, depth);
 			scatterRay(pathSeg, intersectPoint, isx.surfaceNormal, material, rng);
 			pathSeg.remainingBounces--;
 		}		
@@ -335,6 +395,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 	const int pixelcount = cam.resolution.x * cam.resolution.y;
 	const bool reshuffleByMaterialIDs = hst_scene->state.reshuffleByMaterialIDs;
 	const bool useFirstBounceIntersectionCache = hst_scene->state.useFirstBounceIntersectionCache;
+	const bool stochasticAntialising = hst_scene->state.stochasticAntiliasing;
 
 	// 2D block for generating ray from camera
 	const dim3 blockSize2d(8, 8);
@@ -376,7 +437,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 
 	// TODO: perform one iteration of path tracing
 
-	generateRayFromCamera << <blocksPerGrid2d, blockSize2d >> >(cam, iter, traceDepth, dev_paths);
+	generateRayFromCamera << <blocksPerGrid2d, blockSize2d >> >(cam, iter, traceDepth, dev_paths, stochasticAntialising);
 	checkCUDAError("generate camera ray");
 
 	int depth = 0;

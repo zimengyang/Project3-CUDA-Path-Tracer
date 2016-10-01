@@ -49,6 +49,7 @@ struct Camera {
     glm::vec3 right;
     glm::vec2 fov;
     glm::vec2 pixelLength;
+	glm::vec2 DOF; // dof.x = lenRadiux, dof.y = focalLength
 };
 
 struct RenderState {
@@ -60,6 +61,9 @@ struct RenderState {
 
 	bool reshuffleByMaterialIDs;
 	bool useFirstBounceIntersectionCache;
+
+	bool stochasticAntiliasing;
+
 };
 
 struct PathSegment {
