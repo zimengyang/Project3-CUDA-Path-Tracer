@@ -230,7 +230,8 @@ __global__ void pathTraceOneBounce(
 	int geoms_size,
 	Material * materials,
 	int material_size,
-	ShadeableIntersection * intersections
+	ShadeableIntersection * intersections,
+	Geom csg_box, Geom csg_sphere
 	)
 {
 	int path_index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -252,6 +253,7 @@ __global__ void pathTraceOneBounce(
 		// naive parse through global geoms
 		thrust::uniform_real_distribution<float> u01(0, 1);
 		thrust::default_random_engine rng = makeSeededRandomEngine(iter, path_index, depth);
+		int csgMaterialID;
 
 		for (int i = 0; i < geoms_size; i++)
 		{
@@ -265,6 +267,10 @@ __global__ void pathTraceOneBounce(
 			else if (geom.type == SPHERE)
 			{
 				t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u);
+			}
+			else if (geom.type == CSG)
+			{
+				t = csgIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u, csg_box, csg_sphere, csgMaterialID);
 			}
 			// TODO: add more intersection tests here... triangle? metaball? CSG?
 
@@ -291,7 +297,8 @@ __global__ void pathTraceOneBounce(
 		{
 			//The ray hits something
 			intersections[path_index].t = t_min;
-			intersections[path_index].materialId = geoms[hit_geom_index].materialid;
+			//intersections[path_index].materialId = geoms[hit_geom_index].materialid;
+			intersections[path_index].materialId = (geoms[hit_geom_index].type == CSG ? csgMaterialID : geoms[hit_geom_index].materialid);
 			intersections[path_index].surfaceNormal = normal;
 			intersections[path_index].hit_geom_index = hit_geom_index;
 		}
@@ -475,7 +482,8 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 				hst_scene->geoms.size(),
 				dev_materials,
 				hst_scene->materials.size(),
-				dev_intersections
+				dev_intersections,
+				csg_box,csg_sphere
 				);
 			checkCUDAError("trace one bounce");
 			cudaDeviceSynchronize();

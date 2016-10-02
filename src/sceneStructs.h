@@ -10,6 +10,7 @@
 enum GeomType {
     SPHERE,
     CUBE,
+	CSG
 };
 
 struct Ray {
@@ -92,3 +93,6 @@ struct ShadeableIntersection {
 	int materialId;
 	int hit_geom_index;
 };
+
+// test csg primitives
+extern Geom csg_box, csg_sphere;

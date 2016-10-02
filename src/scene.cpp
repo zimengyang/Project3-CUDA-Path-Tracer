@@ -32,6 +32,29 @@ Scene::Scene(string filename) {
 			}
 		}
 	}
+
+	// test set csg primitives
+	csg_box.type = CUBE;
+	csg_box.materialid = 2; // red
+	csg_box.translation = glm::vec3(0, 5, 0);
+	csg_box.rotation = glm::vec3(0, 0, 0);
+	csg_box.scale = glm::vec3(3, 3, 3);
+	csg_box.hasMotionBlur = false;
+	csg_box.transform = utilityCore::buildTransformationMatrix(
+		csg_box.translation, csg_box.rotation, csg_box.scale);
+	csg_box.inverseTransform = glm::inverse(csg_box.transform);
+	csg_box.invTranspose = glm::inverseTranspose(csg_box.transform);
+
+	csg_sphere.type = SPHERE;
+	csg_sphere.materialid = 3; // green
+	csg_sphere.translation = glm::vec3(0, 5.5, 0);
+	csg_sphere.rotation = glm::vec3(0, 0, 0);
+	csg_sphere.scale = glm::vec3(3.2f, 3.2f, 3.2f);
+	csg_sphere.hasMotionBlur = false;
+	csg_sphere.transform = utilityCore::buildTransformationMatrix(
+		csg_sphere.translation, csg_sphere.rotation, csg_sphere.scale);
+	csg_sphere.inverseTransform = glm::inverse(csg_sphere.transform);
+	csg_sphere.invTranspose = glm::inverseTranspose(csg_sphere.transform);
 }
 
 int Scene::loadGeom(string objectid) {
@@ -56,6 +79,12 @@ int Scene::loadGeom(string objectid) {
 				cout << "Creating new cube..." << endl;
 				newGeom.type = CUBE;
 			}
+			else if (strcmp(line.c_str(), "csg") == 0)
+			{
+				cout << "Creating new CSG..." << endl;
+				newGeom.type = CSG;
+			}
+
 		}
 
 		//link material
@@ -101,7 +130,7 @@ int Scene::loadGeom(string objectid) {
 				motionBlur_scale = true;
 			}
 
-				utilityCore::safeGetline(fp_in, line);
+			utilityCore::safeGetline(fp_in, line);
 		}
 
 		newGeom.transform = utilityCore::buildTransformationMatrix(
