@@ -13,6 +13,7 @@ CUDA Path Tracer
   * [x] toggleable method of sorting path/intersection continuous by material type
   * [x] toggleable method of using first bounce caching
 * [ ] Part 2
+  * [x] Fresnel Refraction(Schlick's Approximation), Depth of Field and Stochastic AA
 * [ ] performace anylasis for `reshuffleByMaterialIDs` and `useFirstBounceIntersectionCache`
 
 ## Part1 - Core Features
@@ -31,6 +32,19 @@ CUDA Path Tracer
 * sphere in right rendering is 0.5 reflectance combined with diffuse white [need better approximation]
 
 ## Stochastic Antialiasing & Depth of Field
+### Fresnel Refraction using Schlick's Approximation
+Implement a Fresnel Effect refraction evaluation using [Schlick's Approximation](https://en.wikipedia.org/wiki/Schlick%27s_approximation).
+In the following rendering, right sphere is rendered using Fresnel refraction effect. Left sphere is rendered with 0.2 refraction + 0.1 reflection and 0.7 diffuse. Fresnel effect can better approximate the reflection contribution between two media.
+
+![](renderings/roadmap_cornell_fresnelRefraction.png)
+
+### Depth of Field
+|focal length = 10| focal length = 11.5|
+|------|------|
+|![](renderings/dof_FL_10.png)|![](renderings/dof_FL_11.5.png)|
+
+![](renderings/dof_10.5.png)
+
 ### Stochastic antialiasing:
 
 |with AA| without AA|
@@ -41,12 +55,7 @@ For the detail comparison:
 
 ![](renderings/AA_Comp.png)
 
-### Depth of Field
-|focal length = 10| focal length = 11.5|
-|------|------|
-|![](renderings/dof_FL_10.png)|![](renderings/dof_FL_11.5.png)|
 
-![](renderings/dof_10.5.png)
 
 
 ### (TODO: Your README)
