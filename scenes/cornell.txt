@@ -64,7 +64,7 @@ RGB         .98 .98 .98
 SPECEX      0
 SPECRGB     .98 .98 .98
 REFL        0.1
-REFR        0.8
+REFR        0.2
 REFRIOR     2.5
 EMITTANCE   0
 
@@ -88,7 +88,7 @@ FILE        cornell
 EYE         0.0 5 10.5
 LOOKAT      0 5 0
 UP          0 1 0
-DOF         0.5 11.5
+DOF         0.0 11.5
 
 // Ceiling light
 OBJECT 0
