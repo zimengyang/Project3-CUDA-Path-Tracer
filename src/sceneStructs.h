@@ -20,12 +20,22 @@ struct Ray {
 struct Geom {
     enum GeomType type;
     int materialid;
+
     glm::vec3 translation;
-    glm::vec3 rotation;
-    glm::vec3 scale;
-    glm::mat4 transform;
-    glm::mat4 inverseTransform;
-    glm::mat4 invTranspose;
+	glm::vec3 rotation;
+	glm::vec3 scale;
+	glm::mat4 transform;
+	glm::mat4 inverseTransform;
+	glm::mat4 invTranspose;
+
+	// for motion blur
+	glm::vec3 translation_dst;
+	glm::vec3 rotation_dst;
+	glm::vec3 scale_dst;
+	//glm::mat4 transform_dst;
+	//glm::mat4 inverseTransform_dst;
+	//glm::mat4 invTranspose_dst;
+
 };
 
 struct Material {

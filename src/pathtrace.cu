@@ -222,14 +222,15 @@ __global__ void generateRayFromCamera(
 // pathTraceOneBounce handles ray intersections, generate intersections for shading, 
 // and scatter new ray. You might want to call scatterRay from interactions.h
 __global__ void pathTraceOneBounce(
-	int depth
-	, int num_paths
-	, PathSegment * pathSegments
-	, Geom * geoms
-	, int geoms_size
-	, Material * materials
-	, int material_size
-	, ShadeableIntersection * intersections
+	int iter,
+	int depth,
+	int num_paths,
+	PathSegment * pathSegments,
+	Geom * geoms,
+	int geoms_size,
+	Material * materials,
+	int material_size,
+	ShadeableIntersection * intersections
 	)
 {
 	int path_index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -249,6 +250,8 @@ __global__ void pathTraceOneBounce(
 		glm::vec3 tmp_normal;
 
 		// naive parse through global geoms
+		thrust::uniform_real_distribution<float> u01(0, 1);
+		thrust::default_random_engine rng = makeSeededRandomEngine(iter, path_index, depth);
 
 		for (int i = 0; i < geoms_size; i++)
 		{
@@ -256,11 +259,11 @@ __global__ void pathTraceOneBounce(
 
 			if (geom.type == CUBE)
 			{
-				t = boxIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside);
+				t = boxIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u01(rng));
 			}
 			else if (geom.type == SPHERE)
 			{
-				t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside);
+				t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u01(rng));
 			}
 			// TODO: add more intersection tests here... triangle? metaball? CSG?
 
@@ -463,14 +466,15 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		{
 			// tracing
 			pathTraceOneBounce << <numblocksPathSegmentTracing, blockSize1d >> > (
-				depth
-				, remainingNumPaths
-				, dev_paths
-				, dev_geoms
-				, hst_scene->geoms.size()
-				, dev_materials
-				, hst_scene->materials.size()
-				, dev_intersections
+				iter,
+				depth,
+				remainingNumPaths,
+				dev_paths,
+				dev_geoms,
+				hst_scene->geoms.size(),
+				dev_materials,
+				hst_scene->materials.size(),
+				dev_intersections
 				);
 			checkCUDAError("trace one bounce");
 			cudaDeviceSynchronize();

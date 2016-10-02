@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/intersect.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 #include "sceneStructs.h"
 #include "utilities.h"
@@ -35,6 +37,28 @@ __host__ __device__ glm::vec3 multiplyMV(glm::mat4 m, glm::vec4 v) {
     return glm::vec3(m * v);
 }
 
+__host__ __device__ glm::vec3 lerpVec3(glm::vec3 &a,glm::vec3 &b,float &u) {
+	return a*(1 - u) + u*(b);
+}
+__host__ __device__ void CalculateMotionBlurMatrix(Geom &geo, float& u)
+{
+	if (u > 0.9f)
+		u = 1.0f;
+	glm::vec3 translation = lerpVec3(geo.translation, geo.translation_dst, u);
+	glm::vec3 rotation = lerpVec3(geo.rotation, geo.rotation_dst, u);
+	glm::vec3 scale = lerpVec3(geo.scale, geo.scale_dst, u);
+
+	glm::mat4 translationMat = glm::translate(glm::mat4(), translation);
+	glm::mat4 rotationMat = glm::rotate(glm::mat4(), rotation.x * (float)PI / 180, glm::vec3(1, 0, 0));
+	rotationMat = rotationMat * glm::rotate(glm::mat4(), rotation.y * (float)PI / 180, glm::vec3(0, 1, 0));
+	rotationMat = rotationMat * glm::rotate(glm::mat4(), rotation.z * (float)PI / 180, glm::vec3(0, 0, 1));
+	glm::mat4 scaleMat = glm::scale(glm::mat4(), scale);
+
+	geo.transform = translationMat * rotationMat * scaleMat;
+	geo.inverseTransform = glm::inverse(geo.transform);
+	geo.invTranspose = glm::inverseTranspose(geo.transform);
+}
+
 // CHECKITOUT
 /**
  * Test intersection between a ray and a transformed cube. Untransformed,
@@ -46,7 +70,11 @@ __host__ __device__ glm::vec3 multiplyMV(glm::mat4 m, glm::vec4 v) {
  * @return                   Ray parameter `t` value. -1 if no intersection.
  */
 __host__ __device__ float boxIntersectionTest(Geom box, Ray r,
-        glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside) {
+        glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, float u) {
+
+	//motion blur
+	CalculateMotionBlurMatrix(box, u);
+
     Ray q;
     q.origin    =                multiplyMV(box.inverseTransform, glm::vec4(r.origin   , 1.0f));
     q.direction = glm::normalize(multiplyMV(box.inverseTransform, glm::vec4(r.direction, 0.0f)));
@@ -100,7 +128,11 @@ __host__ __device__ float boxIntersectionTest(Geom box, Ray r,
  * @return                   Ray parameter `t` value. -1 if no intersection.
  */
 __host__ __device__ float sphereIntersectionTest(Geom sphere, Ray r,
-        glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside) {
+        glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, float u) {
+
+	//motion blur
+	CalculateMotionBlurMatrix(sphere, u);
+
     float radius = .5;
 
     glm::vec3 ro = multiplyMV(sphere.inverseTransform, glm::vec4(r.origin, 1.0f));
