@@ -124,6 +124,8 @@ int Scene::loadGeom(string objectid) {
 			newGeom.scale_dst = newGeom.scale;
 		}
 
+		newGeom.hasMotionBlur = (motionBlur_rotation || motionBlur_scale || motionBlur_translation);
+
 		//newGeom.transform_dst = utilityCore::buildTransformationMatrix(
 		//	newGeom.translation_dst, newGeom.rotation_dst, newGeom.scale_dst);
 		//newGeom.inverseTransform_dst = glm::inverse(newGeom.transform_dst);

@@ -29,6 +29,7 @@ struct Geom {
 	glm::mat4 invTranspose;
 
 	// for motion blur
+	bool hasMotionBlur;
 	glm::vec3 translation_dst;
 	glm::vec3 rotation_dst;
 	glm::vec3 scale_dst;
@@ -73,8 +74,6 @@ struct RenderState {
 	bool useFirstBounceIntersectionCache;
 
 	bool stochasticAntiliasing;
-
-	bool useMotionBlur;
 };
 
 struct PathSegment {

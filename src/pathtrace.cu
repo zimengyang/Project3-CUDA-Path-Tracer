@@ -230,8 +230,7 @@ __global__ void pathTraceOneBounce(
 	int geoms_size,
 	Material * materials,
 	int material_size,
-	ShadeableIntersection * intersections,
-	bool useMotionBlur
+	ShadeableIntersection * intersections
 	)
 {
 	int path_index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -253,11 +252,11 @@ __global__ void pathTraceOneBounce(
 		// naive parse through global geoms
 		thrust::uniform_real_distribution<float> u01(0, 1);
 		thrust::default_random_engine rng = makeSeededRandomEngine(iter, path_index, depth);
-		float u = useMotionBlur ? u01(rng) : -1;
 
 		for (int i = 0; i < geoms_size; i++)
 		{
 			Geom & geom = geoms[i];
+			float u = geom.hasMotionBlur ? u01(rng) : -1;
 
 			if (geom.type == CUBE)
 			{
@@ -401,7 +400,6 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 	const bool reshuffleByMaterialIDs = hst_scene->state.reshuffleByMaterialIDs;
 	const bool useFirstBounceIntersectionCache = hst_scene->state.useFirstBounceIntersectionCache;
 	const bool stochasticAntialising = hst_scene->state.stochasticAntiliasing;
-	const bool useMotionBlur = hst_scene->state.useMotionBlur;
 
 	// 2D block for generating ray from camera
 	const dim3 blockSize2d(8, 8);
@@ -477,8 +475,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 				hst_scene->geoms.size(),
 				dev_materials,
 				hst_scene->materials.size(),
-				dev_intersections,
-				useMotionBlur
+				dev_intersections
 				);
 			checkCUDAError("trace one bounce");
 			cudaDeviceSynchronize();
