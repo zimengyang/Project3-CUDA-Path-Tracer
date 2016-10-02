@@ -57,7 +57,7 @@ For the detail comparison:
 ![](renderings/AA_Comp.png)
 
 ## Motion Blur
-|rotation + translation|scale + translation|
+|rotation + translation|scale + translation + non Motion Blur object|
 |------|------|
 |![](renderings/motion_blur1.png)|![](renderings/motion_blur2.png)|
 
@@ -75,7 +75,11 @@ SCALE       1 2 1
 [ROTAT_DST   z z z] 
 ```
 If TRANS_DST/SCALE_DST/ROTAT_DST are not specified, no motion blur will be appled in translation/scale/rotation.
+Motion Blur is an effect for individual object, objects without any optional input will be rendered normally.
+
 See `scenes/test_motion_blur.txt` for input details.
+
+During interpolation, destination posture has higher possibility(10%) to be choosen. This will make the object look like ending up somewhere instead of floating all around.
 
 Future : faster interpolation
 
