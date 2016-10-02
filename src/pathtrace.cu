@@ -230,7 +230,8 @@ __global__ void pathTraceOneBounce(
 	int geoms_size,
 	Material * materials,
 	int material_size,
-	ShadeableIntersection * intersections
+	ShadeableIntersection * intersections,
+	bool useMotionBlur
 	)
 {
 	int path_index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -252,6 +253,7 @@ __global__ void pathTraceOneBounce(
 		// naive parse through global geoms
 		thrust::uniform_real_distribution<float> u01(0, 1);
 		thrust::default_random_engine rng = makeSeededRandomEngine(iter, path_index, depth);
+		float u = useMotionBlur ? u01(rng) : -1;
 
 		for (int i = 0; i < geoms_size; i++)
 		{
@@ -259,11 +261,11 @@ __global__ void pathTraceOneBounce(
 
 			if (geom.type == CUBE)
 			{
-				t = boxIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u01(rng));
+				t = boxIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u);
 			}
 			else if (geom.type == SPHERE)
 			{
-				t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u01(rng));
+				t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u);
 			}
 			// TODO: add more intersection tests here... triangle? metaball? CSG?
 
@@ -399,6 +401,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 	const bool reshuffleByMaterialIDs = hst_scene->state.reshuffleByMaterialIDs;
 	const bool useFirstBounceIntersectionCache = hst_scene->state.useFirstBounceIntersectionCache;
 	const bool stochasticAntialising = hst_scene->state.stochasticAntiliasing;
+	const bool useMotionBlur = hst_scene->state.useMotionBlur;
 
 	// 2D block for generating ray from camera
 	const dim3 blockSize2d(8, 8);
@@ -474,7 +477,8 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 				hst_scene->geoms.size(),
 				dev_materials,
 				hst_scene->materials.size(),
-				dev_intersections
+				dev_intersections,
+				useMotionBlur
 				);
 			checkCUDAError("trace one bounce");
 			cudaDeviceSynchronize();

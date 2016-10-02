@@ -74,6 +74,7 @@ struct RenderState {
 
 	bool stochasticAntiliasing;
 
+	bool useMotionBlur;
 };
 
 struct PathSegment {

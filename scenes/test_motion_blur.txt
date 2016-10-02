@@ -142,8 +142,8 @@ SCALE       .01 10 10
 OBJECT 6
 cube
 material 1
-TRANS       2 4 0
+TRANS       1 4 0
 ROTAT       0 0 0
 SCALE       1 2 1
-TRANS_DST   -2 4 0
+TRANS_DST   -1 4 0
 SCALE_DST   2 4 2

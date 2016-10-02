@@ -73,7 +73,8 @@ __host__ __device__ float boxIntersectionTest(Geom box, Ray r,
         glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, float u) {
 
 	//motion blur
-	CalculateMotionBlurMatrix(box, u);
+	if (u >= 0.0f)
+		CalculateMotionBlurMatrix(box, u);
 
     Ray q;
     q.origin    =                multiplyMV(box.inverseTransform, glm::vec4(r.origin   , 1.0f));
@@ -131,7 +132,8 @@ __host__ __device__ float sphereIntersectionTest(Geom sphere, Ray r,
         glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, float u) {
 
 	//motion blur
-	CalculateMotionBlurMatrix(sphere, u);
+	if (u >= 0.0f)
+		CalculateMotionBlurMatrix(sphere, u);
 
     float radius = .5;
 
