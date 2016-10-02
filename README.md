@@ -14,9 +14,10 @@ CUDA Path Tracer
   * [x] toggleable method of using first bounce caching
 * [ ] Part 2
   * [x] Fresnel Refraction(Schlick's Approximation), Depth of Field and Stochastic AA
+  * [x] Motion Blur
 * [ ] performace anylasis for `reshuffleByMaterialIDs` and `useFirstBounceIntersectionCache`
 
-## Part1 - Core Features
+## Core Features
 | transmission test (with AA)|
 |----|
 |![](renderings/roadmap_cornell_aa.png)|
@@ -55,8 +56,28 @@ For the detail comparison:
 
 ![](renderings/AA_Comp.png)
 
+## Motion Blur
+|rotation + translation|scale + translation|
+|------|------|
+|![](renderings/motion_blur1.png)|![](renderings/motion_blur2.png)|
 
+Motion blur was implemented by interpoalting between two postures. Translation, rotation and scale bluring can be applied separately or in combination with others. Input format: **[] means optional input**
+```
+// cube
+OBJECT 6
+cube
+material 1
+TRANS       2 4 0
+ROTAT       0 0 0
+SCALE       1 2 1
+[TRANS_DST   x x x]
+[SCALE_DST   y y y]
+[ROTAT_DST   z z z] 
+```
+If TRANS_DST/SCALE_DST/ROTAT_DST are not specified, no motion blur will be appled in translation/scale/rotation.
+See `scenes/test_motion_blur.txt` for input details.
 
+Future : faster interpolation
 
 ### (TODO: Your README)
 
