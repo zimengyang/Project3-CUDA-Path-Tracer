@@ -50,6 +50,8 @@ struct Material {
     float hasRefractive;
     float indexOfRefraction;
     float emittance;
+
+	int texId;
 };
 
 struct Camera {
@@ -92,6 +94,7 @@ struct ShadeableIntersection {
 	glm::vec3 surfaceNormal;
 	int materialId;
 	int hit_geom_index;
+	glm::vec2 uv;
 };
 
 // constructive solid geometry

@@ -70,7 +70,7 @@ __host__ __device__ void CalculateMotionBlurMatrix(Geom &geo, float& u)
  * @return                   Ray parameter `t` value. -1 if no intersection.
  */
 __host__ __device__ float boxIntersectionTest(Geom box, Ray r,
-	glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, float u) {
+	glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, glm::vec2 &uv, float u) {
 
 	//motion blur
 	if (u >= 0.0f)
@@ -111,8 +111,43 @@ __host__ __device__ float boxIntersectionTest(Geom box, Ray r,
 			tmin_n = tmax_n;
 			outside = false;
 		}
-		intersectionPoint = multiplyMV(box.transform, glm::vec4(getPointOnRay(q, tmin), 1.0f));
+		glm::vec3 localHitPoint = getPointOnRay(q, tmin);
+		intersectionPoint = multiplyMV(box.transform, glm::vec4(localHitPoint, 1.0f));
 		normal = glm::normalize(multiplyMV(box.transform, glm::vec4(tmin_n, 0.0f)));
+
+		// assign uv
+		uv = glm::vec2(-1, -1);
+		if (glm::abs(localHitPoint.x - 0.5f) < 1e-4f) // right x= 0.5
+		{
+			uv.x = 0.5f - localHitPoint.y;
+			uv.y = 0.5f - localHitPoint.z;
+		}
+		else if (glm::abs(localHitPoint.x + 0.5f) < 1e-4f) // left x= -0.5
+		{
+			uv.x = 0.5f - localHitPoint.y;
+			uv.y = 0.5f + localHitPoint.z;
+		}
+		else if (glm::abs(localHitPoint.y + 0.5f) < 1e-4f) // bottom y= -0.5
+		{
+			uv.x = 0.5f - localHitPoint.z;
+			uv.y = 0.5f + localHitPoint.x;
+		}
+		else if (glm::abs(localHitPoint.y - 0.5f) < 1e-4f) // top y= 0.5
+		{
+			uv.x = 0.5f + localHitPoint.x;
+			uv.y = 0.5f + localHitPoint.z;
+		}
+		else if (glm::abs(localHitPoint.z + 0.5f) < 1e-4f) // back z= -0.5
+		{
+			uv.x = 0.5f - localHitPoint.y;
+			uv.y = 0.5f - localHitPoint.x;
+		}
+		else if (glm::abs(localHitPoint.z - 0.5f) < 1e-4f) // front z= 0.5
+		{
+			uv.x = 0.5f - localHitPoint.y;
+			uv.y = 0.5f + localHitPoint.x;
+		}
+
 		return glm::length(r.origin - intersectionPoint);
 	}
 	return -1;
@@ -129,7 +164,7 @@ __host__ __device__ float boxIntersectionTest(Geom box, Ray r,
  * @return                   Ray parameter `t` value. -1 if no intersection.
  */
 __host__ __device__ float sphereIntersectionTest(Geom sphere, Ray r,
-	glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, float u) {
+	glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, glm::vec2 & uv, float u) {
 
 	//motion blur
 	if (u >= 0.0f)
@@ -175,6 +210,10 @@ __host__ __device__ float sphereIntersectionTest(Geom sphere, Ray r,
 	if (!outside) {
 		normal = -normal;
 	}
+
+	// assign UV
+	uv.x = 0.5f - atan2(objspaceIntersection.z, objspaceIntersection.x) / (2 * PI);
+	uv.y = 0.5f - asin(objspaceIntersection.y * 2.0f) / PI; // y is(-0.5~0.5)
 
 	return glm::length(r.origin - intersectionPoint);
 }
@@ -693,7 +732,7 @@ __host__ __device__ void csgIntersect(Geom A, Geom B, Ray r,
 
 __host__ __device__ float csgIntersectionTest(Geom csg, Ray r,
 	Geom csg_primitive1, Geom csg_primitive2,
-	glm::vec3 &intersectionPoint, glm::vec3 &normal, int & csgMaterialID) 
+	glm::vec3 &intersectionPoint, glm::vec3 &normal, glm::vec2 & uv, int & csgMaterialID) 
 {
 
 	Ray r_local;
@@ -714,6 +753,7 @@ __host__ __device__ float csgIntersectionTest(Geom csg, Ray r,
 	//csgIntersect(csg_primitive1, csg_primitive2, r_local,
 	//	t, intersectionPoint, normal, csgMaterialID);
 
+	uv = glm::vec2(-1, -1);
 	if (t < 0)
 	{
 		return -1;

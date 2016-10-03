@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <stb_image_write.h>
+#include <stb_image.h>
 
 #include "image.h"
 
@@ -11,7 +12,7 @@ image::image(int x, int y) :
 }
 
 image::~image() {
-    delete pixels;
+    delete[] pixels;
 }
 
 void image::setPixel(int x, int y, const glm::vec3 &pixel) {
@@ -42,4 +43,45 @@ void image::saveHDR(const std::string &baseFilename) {
     std::string filename = baseFilename + ".hdr";
     stbi_write_hdr(filename.c_str(), xSize, ySize, 3, (const float *) pixels);
     std::cout << "Saved " + filename + "." << std::endl;
+}
+
+void image::loadImage(const std::string & filename)
+{
+
+}
+
+image::image(string & filename)
+{
+	//int width, height;
+	int dim = 3;
+	unsigned char *bytes = stbi_load(filename.c_str(), &xSize, &ySize, &dim, 0);
+	// keep dim for png alpha channel
+	// stbi_load is a column-major or row-major? tbd
+	pixels = new glm::vec3[xSize * ySize];
+	for (int y = 0; y < ySize; ++y)
+		for (int x = 0; x < xSize; ++x)	
+		{
+			int index = y * xSize + x;
+			pixels[index].x = float(bytes[dim * index + 0]) / 255.0f;
+			pixels[index].y = float(bytes[dim * index + 1]) / 255.0f;
+			pixels[index].z = float(bytes[dim * index + 2]) / 255.0f;
+		}
+
+	cout << xSize << " X " << ySize << endl;
+	cout << "load texture " << filename.c_str() << " done!" << endl;
+	/*cout << "test pixel:" 
+		<< pixels[10 * ySize + 2].x << ","
+		<< pixels[10 * ySize + 2].y << ","
+		<< pixels[10 * ySize + 2].z << endl;;*/
+	delete[] bytes; 
+}
+
+int image::pixelCount()
+{
+	return xSize * ySize;
+}
+
+glm::vec2 image::getSize()
+{
+	return glm::vec2(xSize, ySize);
 }

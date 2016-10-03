@@ -75,13 +75,20 @@ static Material * dev_materials = NULL;
 static PathSegment * dev_paths = NULL;
 static ShadeableIntersection * dev_intersections = NULL;
 
+
 // TODO: static variables for device memory, any extra info you need, etc
 // ...
 static int * dev_materialIDs_1 = NULL;
 static int * dev_materialIDs_2 = NULL;
 
+
 // first bounce intersections cache
 static ShadeableIntersection * dev_first_bounce_intersections = NULL;
+
+// texture buffer
+glm::vec3 ** dev_textures = NULL;
+glm::vec2 * dev_textureSizes = NULL;
+
 
 void pathtraceInit(Scene *scene) {
 	hst_scene = scene;
@@ -108,6 +115,23 @@ void pathtraceInit(Scene *scene) {
 
 	cudaMalloc(&dev_first_bounce_intersections, pixelcount * sizeof(ShadeableIntersection));
 
+	// copy texutre memory to device
+	int textureSize = hst_scene->textures.size();
+	cudaMalloc((void**)&dev_textures, textureSize * sizeof(glm::vec3*));
+	cudaMalloc((void**)&dev_textureSizes, textureSize * sizeof(glm::vec2));
+	std::vector<glm::vec3*> textures;
+	std::vector<glm::vec2> textureSizes;
+	glm::vec3* tmp;
+	for (int i = 0; i < textureSize; ++i)
+	{
+		int texPixelCount = hst_scene->textures[i]->pixelCount();
+		cudaMalloc((void**)&tmp, texPixelCount * sizeof(glm::vec3));
+		cudaMemcpy(tmp, hst_scene->textures[i]->pixels, texPixelCount * sizeof(glm::vec3), cudaMemcpyHostToDevice);
+		textures.push_back(tmp);
+		textureSizes.push_back(hst_scene->textures[i]->getSize());
+	}
+	cudaMemcpy(dev_textures, textures.data(), textureSize * sizeof(glm::vec3*), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_textureSizes, textureSizes.data(), textureSize * sizeof(glm::vec2), cudaMemcpyHostToDevice);
 	checkCUDAError("pathtraceInit");
 }
 
@@ -122,6 +146,10 @@ void pathtraceFree() {
 	cudaFree(dev_materialIDs_1);
 	cudaFree(dev_materialIDs_2);
 	cudaFree(dev_first_bounce_intersections);
+
+	//free texture memory on device
+	cudaFree(dev_textures);
+	cudaFree(dev_textureSizes);
 
 	checkCUDAError("pathtraceFree");
 }
@@ -246,9 +274,11 @@ __global__ void pathTraceOneBounce(
 		float t_min = FLT_MAX;
 		int hit_geom_index = -1;
 		bool outside = true;
+		glm::vec2 uv = glm::vec2(-1, -1);
 
 		glm::vec3 tmp_intersect;
 		glm::vec3 tmp_normal;
+		glm::vec2 tmp_uv = glm::vec2(-1, -1);
 
 		// naive parse through global geoms
 		thrust::uniform_real_distribution<float> u01(0, 1);
@@ -262,15 +292,15 @@ __global__ void pathTraceOneBounce(
 
 			if (geom.type == CUBE)
 			{
-				t = boxIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u);
+				t = boxIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, tmp_uv, u);
 			}
 			else if (geom.type == SPHERE)
 			{
-				t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u);
+				t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, tmp_uv, u);
 			}
 			else if (geom.type == CSG)
 			{
-				t = csgIntersectionTest(geom, pathSegment.ray, csg_box, csg_sphere, tmp_intersect, tmp_normal, csgMaterialID);
+				t = csgIntersectionTest(geom, pathSegment.ray, csg_box, csg_sphere, tmp_intersect, tmp_normal, tmp_uv, csgMaterialID);
 			}
 			// TODO: add more intersection tests here... triangle? metaball? CSG?
 
@@ -282,6 +312,7 @@ __global__ void pathTraceOneBounce(
 				hit_geom_index = i;
 				intersect_point = tmp_intersect;
 				normal = tmp_normal;
+				uv = tmp_uv;
 			}
 		}
 
@@ -301,6 +332,7 @@ __global__ void pathTraceOneBounce(
 			intersections[path_index].materialId = (geoms[hit_geom_index].type == CSG ? csgMaterialID : geoms[hit_geom_index].materialid);
 			intersections[path_index].surfaceNormal = normal;
 			intersections[path_index].hit_geom_index = hit_geom_index;
+			intersections[path_index].uv = uv;
 		}
 	}
 }
@@ -314,7 +346,10 @@ __global__ void shadingAndEvaluatingBSDF(
 	int num_paths,
 	ShadeableIntersection * shadeableIntersections,
 	PathSegment * pathSegments,
-	Material * materials)
+	Material * materials,
+	glm::vec3** textures,
+	glm::vec2*  textureSizes
+	)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx >= num_paths)
@@ -336,7 +371,8 @@ __global__ void shadingAndEvaluatingBSDF(
 		{
 			glm::vec3 intersectPoint = pathSeg.ray.origin + pathSeg.ray.direction * isx.t;
 			thrust::default_random_engine rng = makeSeededRandomEngine(iter, idx, depth);
-			scatterRay(pathSeg, intersectPoint, isx.surfaceNormal, material, rng);
+			scatterRay(pathSeg, intersectPoint, isx.surfaceNormal, material, textures, textureSizes, isx.uv, rng);
+			
 			pathSeg.remainingBounces--;
 		}		
 	}
@@ -532,7 +568,9 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 			remainingNumPaths,
 			dev_intersections,
 			dev_paths,
-			dev_materials
+			dev_materials,
+			dev_textures,
+			dev_textureSizes
 			);
 		checkCUDAError("shading");
 		cudaDeviceSynchronize();

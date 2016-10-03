@@ -4,9 +4,11 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-
 Geom csg_box, csg_sphere;
 Scene::Scene(string filename) {
+
+	textures.clear();
+
 	cout << "Reading scene from " << filename << " ..." << endl;
 	cout << " " << endl;
 	char* fname = (char*)filename.c_str();
@@ -256,7 +258,7 @@ int Scene::loadMaterial(string materialid) {
 		Material newMaterial;
 
 		//load static properties
-		for (int i = 0; i < 7; i++) {
+		for (int i = 0; i < 8; i++) {
 			string line;
 			utilityCore::safeGetline(fp_in, line);
 			vector<string> tokens = utilityCore::tokenizeString(line);
@@ -282,6 +284,20 @@ int Scene::loadMaterial(string materialid) {
 			}
 			else if (strcmp(tokens[0].c_str(), "EMITTANCE") == 0) {
 				newMaterial.emittance = atof(tokens[1].c_str());
+			}
+			else if (strcmp(tokens[0].c_str(), "TEXTURE") == 0)
+			{
+				string texFilename = tokens[1];
+				if (strcmp(texFilename.c_str(), "NULL") == 0)
+				{
+					newMaterial.texId = -1;
+				}
+				else
+				{
+					// record new texture, push
+					newMaterial.texId = this->textures.size();
+					this->textures.push_back(new image(texFilename));
+				}
 			}
 		}
 		materials.push_back(newMaterial);

@@ -7,24 +7,36 @@ CUDA Path Tracer
 * Tested on: Windows 10, i7-4850 @ 2.3GHz 16GB, GT 750M (Personal Laptop)
 
 ## Roadmap
-* [x] Part 1 - core features
+* [x] Basic 
   * [x] BSDF evaluation : diffuse, perfect specular and imperfect specular surface
   * [x] path termination using stream compaction
   * [x] toggleable method of sorting path/intersection continuous by material type
   * [x] toggleable method of using first bounce caching
-* [ ] Part 2
+* [ ] More on the way...
   * [x] Fresnel Refraction(Schlick's Approximation), Depth of Field and Stochastic AA
   * [x] Motion Blur
   * [ ] Constructive Solid Geometry
-* [ ] performace anylasis for `reshuffleByMaterialIDs` and `useFirstBounceIntersectionCache`
+  * [x] Texture Mapping 
+* [ ] performance anylasis for `reshuffleByMaterialIDs` and `useFirstBounceIntersectionCache`
+
+## Texture Mapping 
+Implemention of cube and sphere UV coordinates mapping. 
+
+![](renderings/texture_mapping.png)
+Above rendering - Iterations = 5000, texture mapping for sphere and cube and for diffuse/specular materials.
+
+For now, things can be done:
+* Loading multiple texture files into GPU, calculate texture color while path tracing.
+* Can be combined with different materials(reflect,refract and diffuse).
 
 ## Constructive Solid Geometry not yet
 Reference : slides from CIS560 computer graphics.
 
-**TEST basic ops, todo build geo tree.**
+**TEST basic ops correctness, low iterations**
 * Basic TEST : A is a red cube, B is a green sphere. Hardcoded, to-do: build tree.
 * Test renderings: ~ 200 iterations.
- 
+* Build entire stucture in reference paper requires much longer time... don't know what to do with it
+
 | A - B | B - A|
 |------|------|
 |![](renderings/csg_difference_test.png)|![](renderings/csg_difference_test2.png)|

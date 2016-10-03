@@ -7,6 +7,7 @@
 #include "glm/glm.hpp"
 #include "utilities.h"
 #include "sceneStructs.h"
+#include "image.h"
 
 using namespace std;
 // test csg primitives
@@ -27,4 +28,8 @@ public:
     RenderState state;
 
 	void InitializeCSGTree();
+
+	// keep a pointer vector intead of object vector
+	// recycle
+	std::vector<image*> textures;
 };
