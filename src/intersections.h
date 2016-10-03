@@ -286,6 +286,11 @@ __host__ __device__ void csgBoxIntersectionTest(Geom box, Ray r,
 	}
 }
 
+
+/**
+* reference: slides from CIS560 computer graphcis!
+* I should REALLY REALLY REALLY read them carefully.
+*/
 __host__ __device__ void csgDifference(Geom A, Geom B, Ray r,
 	float& t, glm::vec3 & point, glm::vec3 & normal, int & materialID)
 {
@@ -338,11 +343,137 @@ __host__ __device__ void csgDifference(Geom A, Geom B, Ray r,
 	}
 }
 
+__host__ __device__ void csgUnion(Geom A, Geom B, Ray r,
+	float& t, glm::vec3 & point, glm::vec3 & normal, int & materialID)
+{
+	float Atmin, Atmax, Btmin, Btmax;
+	glm::vec3 A_point_min, A_point_max, B_point_min, B_point_max;
+	glm::vec3 A_normal_min, A_normal_max, B_normal_min, B_normal_max;
+
+	if (A.type == CUBE)
+		csgBoxIntersectionTest(A, r, Atmin, A_point_min, A_normal_min, Atmax, A_point_max, A_normal_max);
+	else
+		csgSphereIntersectionTest(A, r, Atmin, A_point_min, A_normal_min, Atmax, A_point_max, A_normal_max);
+
+	if (B.type == CUBE)
+		csgBoxIntersectionTest(B, r, Btmin, B_point_min, B_normal_min, Btmax, B_point_max, B_normal_max);
+	else
+		csgSphereIntersectionTest(B, r, Btmin, B_point_min, B_normal_min, Btmax, B_point_max, B_normal_max);
+
+	if (Atmin > 0 && Btmin > 0)
+	{
+		if (Atmin < Btmin)
+		{
+			t = Atmin;
+			point = A_point_min;
+			normal = A_normal_min;
+			materialID = A.materialid;
+			return;
+		}
+		else 
+		{
+			t = Btmin;
+			point = B_point_min;
+			normal = B_normal_min;
+			materialID = B.materialid;
+			return;
+		}
+	}
+	else
+	{
+		if (Atmin < 0)
+		{
+			t = Btmin;
+			point = B_point_min;
+			normal = B_normal_min;
+			materialID = B.materialid;
+			return;
+		}
+		else
+		{
+			t = Atmin;
+			point = A_point_min;
+			normal = A_normal_min;
+			materialID = A.materialid;
+			return;
+		}
+	}
+}
+
+__host__ __device__ void csgIntersect(Geom A, Geom B, Ray r,
+	float& t, glm::vec3 & point, glm::vec3 & normal, int & materialID)
+{
+	float Atmin, Atmax, Btmin, Btmax;
+	glm::vec3 A_point_min, A_point_max, B_point_min, B_point_max;
+	glm::vec3 A_normal_min, A_normal_max, B_normal_min, B_normal_max;
+
+	if (A.type == CUBE)
+		csgBoxIntersectionTest(A, r, Atmin, A_point_min, A_normal_min, Atmax, A_point_max, A_normal_max);
+	else
+		csgSphereIntersectionTest(A, r, Atmin, A_point_min, A_normal_min, Atmax, A_point_max, A_normal_max);
+
+	if (B.type == CUBE)
+		csgBoxIntersectionTest(B, r, Btmin, B_point_min, B_normal_min, Btmax, B_point_max, B_normal_max);
+	else
+		csgSphereIntersectionTest(B, r, Btmin, B_point_min, B_normal_min, Btmax, B_point_max, B_normal_max);
+
+	if (Atmin < Btmin && Atmax > Btmin) // B
+	{
+		t = Btmin;
+		point = B_point_min;
+		normal = B_normal_min;
+		materialID = B.materialid;
+		return;
+	}
+	else if (Atmin > Btmin && Atmin < Btmax) //A
+	{
+		t = Atmin;
+		point = A_point_min;
+		normal = A_normal_min;
+		materialID = A.materialid;
+		return;
+	}
+	else
+	{
+		t = -1;
+	}
+
+}
+
+
 __host__ __device__ float csgIntersectionTest(Geom csg, Ray r,
-	glm::vec3 &intersectionPoint, glm::vec3 &normal, bool &outside, float u, Geom csg_box, Geom csg_sphere, int & csgMaterialID) {
+	Geom csg_primitive1, Geom csg_primitive2,
+	glm::vec3 &intersectionPoint, glm::vec3 &normal, int & csgMaterialID) 
+{
+
+	Ray r_local;
+	r_local.origin = multiplyMV(csg.inverseTransform, glm::vec4(r.origin, 1.0f));
+	r_local.direction = glm::normalize(multiplyMV(csg.inverseTransform, glm::vec4(r.direction, 0.0f)));
 
 	float t;
-	csgDifference(csg_box, csg_sphere, r,
+
+	// Difference test
+	csgDifference(csg_primitive1, csg_primitive2, r_local,
 		t, intersectionPoint, normal, csgMaterialID);
-	return t;
+	
+	//// Union test
+	//csgIntersect(csg_primitive1, csg_primitive2, r_local,
+	//	t, intersectionPoint, normal, csgMaterialID);
+
+	//// Intersect test
+	//csgIntersect(csg_primitive1, csg_primitive2, r_local,
+	//	t, intersectionPoint, normal, csgMaterialID);
+
+	if (t < 0)
+	{
+		return -1;
+	}
+	else
+	{
+		intersectionPoint = multiplyMV(csg.transform, glm::vec4(intersectionPoint, 1.f));
+		normal = glm::normalize(multiplyMV(csg.invTranspose, glm::vec4(normal, 0.f)));
+		t = glm::length(intersectionPoint - r.origin);
+		return t;
+	}
+	
 }

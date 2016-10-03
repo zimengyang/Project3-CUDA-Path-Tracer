@@ -270,7 +270,7 @@ __global__ void pathTraceOneBounce(
 			}
 			else if (geom.type == CSG)
 			{
-				t = csgIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside, u, csg_box, csg_sphere, csgMaterialID);
+				t = csgIntersectionTest(geom, pathSegment.ray, csg_box, csg_sphere, tmp_intersect, tmp_normal, csgMaterialID);
 			}
 			// TODO: add more intersection tests here... triangle? metaball? CSG?
 

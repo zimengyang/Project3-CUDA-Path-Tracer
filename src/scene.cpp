@@ -36,7 +36,7 @@ Scene::Scene(string filename) {
 	// test set csg primitives
 	csg_box.type = CUBE;
 	csg_box.materialid = 2; // red
-	csg_box.translation = glm::vec3(0, 5, 0);
+	csg_box.translation = glm::vec3(0, 0, 0);
 	csg_box.rotation = glm::vec3(0, 0, 0);
 	csg_box.scale = glm::vec3(3, 3, 3);
 	csg_box.hasMotionBlur = false;
@@ -47,7 +47,7 @@ Scene::Scene(string filename) {
 
 	csg_sphere.type = SPHERE;
 	csg_sphere.materialid = 3; // green
-	csg_sphere.translation = glm::vec3(0, 5.5, 0);
+	csg_sphere.translation = glm::vec3(0, 0.5f, 0);
 	csg_sphere.rotation = glm::vec3(0, 0, 0);
 	csg_sphere.scale = glm::vec3(3.2f, 3.2f, 3.2f);
 	csg_sphere.hasMotionBlur = false;
