@@ -15,7 +15,23 @@ CUDA Path Tracer
 * [ ] Part 2
   * [x] Fresnel Refraction(Schlick's Approximation), Depth of Field and Stochastic AA
   * [x] Motion Blur
+  * [ ] Constructive Solid Geometry
 * [ ] performace anylasis for `reshuffleByMaterialIDs` and `useFirstBounceIntersectionCache`
+
+## Constructive Solid Geometry not yet
+Reference : slides from CIS560 computer graphics.
+
+**TEST basic ops, todo build geo tree.**
+* Basic TEST : A is a red cube, B is a green sphere. Hardcoded, to-do: build tree.
+* Test renderings: ~ 200 iterations.
+ 
+| A - B | B - A|
+|------|------|
+|![](renderings/osg_difference_test.png)|![](renderings/osg_difference_test2.png)|
+ 
+|A Union B| A Intersect B|
+|------|------|
+|![](renderings/osg_union_test.png)|![](renderings/osg_intersect_test.png)|
 
 ## Core Features
 | transmission test (with AA)|
