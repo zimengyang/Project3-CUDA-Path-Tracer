@@ -4,6 +4,8 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+
+Geom csg_box, csg_sphere;
 Scene::Scene(string filename) {
 	cout << "Reading scene from " << filename << " ..." << endl;
 	cout << " " << endl;
@@ -33,6 +35,11 @@ Scene::Scene(string filename) {
 		}
 	}
 
+	InitializeCSGTree();
+}
+
+void Scene::InitializeCSGTree()
+{
 	// test set csg primitives
 	csg_box.type = CUBE;
 	csg_box.materialid = 2; // red
@@ -56,6 +63,7 @@ Scene::Scene(string filename) {
 	csg_sphere.inverseTransform = glm::inverse(csg_sphere.transform);
 	csg_sphere.invTranspose = glm::inverseTranspose(csg_sphere.transform);
 }
+
 
 int Scene::loadGeom(string objectid) {
 	int id = atoi(objectid.c_str());

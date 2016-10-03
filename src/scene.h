@@ -9,6 +9,8 @@
 #include "sceneStructs.h"
 
 using namespace std;
+// test csg primitives
+extern Geom csg_box, csg_sphere;
 
 class Scene {
 private:
@@ -23,4 +25,6 @@ public:
     std::vector<Geom> geoms;
     std::vector<Material> materials;
     RenderState state;
+
+	void InitializeCSGTree();
 };

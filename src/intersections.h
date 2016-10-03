@@ -180,11 +180,9 @@ __host__ __device__ float sphereIntersectionTest(Geom sphere, Ray r,
 }
 
 
-
 /**
 *	test intersection function for Constructive Solid Geometry
 */
-Geom csg_box, csg_sphere;
 __host__ __device__ void csgSphereIntersectionTest(Geom sphere, Ray r,
 	float &tmin, glm::vec3 &point_min, glm::vec3 & normal_min,
 	float &tmax, glm::vec3 &point_max, glm::vec3 & normal_max)
@@ -273,11 +271,11 @@ __host__ __device__ void csgBoxIntersectionTest(Geom box, Ray r,
 		_tmin = glm::min(tmin, tmax);
 		_tmax = glm::max(tmin, tmax);
 		point_min = multiplyMV(box.transform, glm::vec4(getPointOnRay(q, _tmin), 1.0f));
-		normal_min = glm::normalize(multiplyMV(box.transform, glm::vec4(tmin_n, 0.0f)));
+		normal_min = glm::normalize(multiplyMV(box.invTranspose, glm::vec4(tmin_n, 0.0f)));
 		_tmin = glm::length(point_min - r.origin);
 
 		point_max = multiplyMV(box.transform, glm::vec4(getPointOnRay(q, _tmax), 1.0f));
-		normal_max = glm::normalize(multiplyMV(box.transform, glm::vec4(tmax_n, 0.0f)));
+		normal_max = glm::normalize(multiplyMV(box.invTranspose, glm::vec4(tmax_n, 0.0f)));
 		_tmax = glm::length(point_max - r.origin);
 	}
 	else
@@ -440,6 +438,258 @@ __host__ __device__ void csgIntersect(Geom A, Geom B, Ray r,
 
 }
 
+////------------------------------------------------------------///////
+//// UGLY codes begin 
+// for recursive test, ugly!
+//__host__ __device__ void csgUnion(
+//	float & tmin, glm::vec3 & point_min, glm::vec3 & normal_min,
+//	float & tmax, glm::vec3 & point_max, glm::vec3 & normal_max,
+//	float & Atmin, glm::vec3 & A_point_min, glm::vec3 & A_normal_min,
+//	float & Atmax, glm::vec3 & A_point_max, glm::vec3 & A_normal_max,
+//	float & Btmin, glm::vec3 & B_point_min, glm::vec3 & B_normal_min,
+//	float & Btmax, glm::vec3 & B_point_max, glm::vec3 & B_normal_max,
+//	int & matID, int &A_matID, int & B_matID)
+//{
+//	if (Atmin > 0 && Btmin > 0)
+//	{
+//		if (Atmin < Btmin)
+//		{
+//			tmin = Atmin;
+//			point_min = A_point_min;
+//			normal_min = A_normal_min;
+//			matID = A_matID;
+//		}
+//		else
+//		{
+//			tmin = Btmin;
+//			point_min = B_point_min;
+//			normal_min = B_normal_min;
+//			matID = B_matID;
+//		}
+//	}
+//	else
+//	{
+//		if (Atmin < 0)
+//		{
+//			tmin = Btmin;
+//			point_min = B_point_min;
+//			normal_min = B_normal_min;
+//			matID = B_matID;
+//		}
+//		else
+//		{
+//			tmin = Atmin;
+//			point_min = A_point_min;
+//			normal_min = A_normal_min;
+//			matID = A_matID;
+//		}
+//	}
+//
+//
+//	if (Atmax > 0 && Btmax > 0)
+//	{
+//		if (Atmax > Btmax)
+//		{
+//			tmax = Atmax;
+//			point_max = A_point_max;
+//			normal_max = A_normal_max;
+//			matID = A_matID;
+//		}
+//		else
+//		{
+//			tmax = Btmax;
+//			point_max = B_point_max;
+//			normal_max = B_normal_max;
+//			matID = B_matID;
+//		}
+//	}
+//	else
+//	{
+//		if (Atmax < 0)
+//		{
+//			tmax = Btmax;
+//			point_max = B_point_max;
+//			normal_max = B_normal_max;
+//			matID = B_matID;
+//		}
+//		else
+//		{
+//			tmax = Atmax;
+//			point_max = A_point_max;
+//			normal_max = A_normal_max;
+//			matID = A_matID;
+//		}
+//	}
+//}
+//
+//__host__ __device__ void csgDifference(
+//	float & t, glm::vec3 & point, glm::vec3 & normal, int & materialID,
+//	float & Atmin, glm::vec3 & A_point_min, glm::vec3 & A_normal_min,
+//	float & Atmax, glm::vec3 & A_point_max, glm::vec3 & A_normal_max,
+//	float & Btmin, glm::vec3 & B_point_min, glm::vec3 & B_normal_min,
+//	float & Btmax, glm::vec3 & B_point_max, glm::vec3 & B_normal_max,
+//	int &A_matID, int & B_matID
+//	)
+//{
+//	if (Btmin < 0) // nothing hit B, return isx A
+//	{
+//		t = Atmin;
+//		point = A_point_min;
+//		normal = A_normal_min;
+//		materialID = A_matID;
+//		return;
+//	}
+//	else // Btmin > 0
+//	{
+//		if (Atmin < Btmin)
+//		{
+//			t = Atmin;
+//			point = A_point_min;
+//			normal = A_normal_min;
+//			materialID = A_matID;
+//			return;
+//		}
+//		else if (Btmax < Atmax)
+//		{
+//			t = Btmax;
+//			point = B_point_max;
+//			normal = -B_normal_max;
+//			materialID = B_matID;
+//			return;
+//		}
+//		else
+//		{
+//			t = -1;
+//			return;
+//		}
+//	}
+//}
+//
+//__host__ __device__ void csgIntersect(
+//	float & t, glm::vec3 & point, glm::vec3 & normal, int & materialID,
+//	float & Atmin, glm::vec3 & A_point_min, glm::vec3 & A_normal_min,
+//	float & Atmax, glm::vec3 & A_point_max, glm::vec3 & A_normal_max,
+//	float & Btmin, glm::vec3 & B_point_min, glm::vec3 & B_normal_min,
+//	float & Btmax, glm::vec3 & B_point_max, glm::vec3 & B_normal_max,
+//	int &A_matID, int & B_matID
+//	)
+//{
+//
+//	if (Atmin < Btmin && Atmax > Btmin) // B
+//	{
+//		t = Btmin;
+//		point = B_point_min;
+//		normal = B_normal_min;
+//		materialID = B_matID;
+//		return;
+//	}
+//	else if (Atmin > Btmin && Atmin < Btmax) //A
+//	{
+//		t = Atmin;
+//		point = A_point_min;
+//		normal = A_normal_min;
+//		materialID = A_matID;
+//		return;
+//	}
+//	else
+//	{
+//		t = -1;
+//	}
+//}
+//
+//
+//__host__ __device__ void csgRecursiveTest(
+//	CSGNode* root, Ray& r,
+//	float & tmin, glm::vec3 & point_min, glm::vec3 & normal_min,
+//	float & tmax, glm::vec3 & point_max, glm::vec3 & normal_max,
+//	int & matID
+//	)
+//{
+//	if (!root)
+//	{
+//		tmin = -1;
+//		return;
+//	}
+//	
+//	//leaf node
+//	if (root->leftG == NULL && root->rightG == NULL)
+//	{
+//		matID = root->geo->materialid;
+//		if (root->geo->type == CUBE)
+//		{
+//			csgBoxIntersectionTest(*root->geo, r, tmin, point_min, normal_min, tmax, point_max, normal_max);
+//			return;
+//		}
+//		else
+//		{
+//			csgSphereIntersectionTest(*root->geo, r, tmin, point_min, normal_min, tmax, point_max, normal_max);
+//			return;
+//		}
+//	}
+//
+//	//else intermedia
+//	float left_t_min;
+//	glm::vec3 left_point_min, left_normal_min;
+//	float left_t_max;
+//	glm::vec3 left_point_max, left_normal_max;
+//
+//
+//	float right_t_min;
+//	glm::vec3 right_point_min, right_normal_min;
+//	float right_t_max;
+//	glm::vec3 right_point_max, right_normal_max;
+//
+//	int left_matID, right_matID;
+//
+//	csgRecursiveTest(root->leftG, r, left_t_min, left_point_min, left_normal_min, left_t_max, left_point_max, left_normal_max, left_matID);
+//	csgRecursiveTest(root->rightG, r, right_t_min, right_point_min, right_normal_min, right_t_max, right_point_max, right_normal_max, right_matID);
+//
+//	if (root->op == DIFF)
+//	{
+//		csgDifference(
+//			tmin, point_min, normal_min, matID,
+//			left_t_min, left_point_min, left_normal_min,
+//			left_t_max, left_point_max, left_normal_max,
+//			right_t_min, right_point_min, right_normal_min,
+//			right_t_max, right_point_max, right_normal_max,
+//			left_matID, right_matID
+//			);
+//	}
+//	else if (root->op == UNION)
+//	{
+//		csgUnion(
+//			tmin, point_min, normal_min, matID,
+//			left_t_min, left_point_min, left_normal_min,
+//			left_t_max, left_point_max, left_normal_max,
+//			right_t_min, right_point_min, right_normal_min,
+//			right_t_max, right_point_max, right_normal_max,
+//			left_matID, right_matID
+//			);
+//	}
+//	else if (root->op == DIFF_INV)
+//	{
+//		csgDifference(
+//			tmin, point_min, normal_min, matID,
+//			right_t_min, right_point_min, right_normal_min,
+//			right_t_max, right_point_max, right_normal_max,
+//			left_t_min, left_point_min, left_normal_min,
+//			left_t_max, left_point_max, left_normal_max,
+//			left_matID, right_matID
+//			);
+//	}
+//	else if (root->op == INTERSECT)
+//	{
+//		csgIntersect(
+//			tmin, point_min, normal_min, matID,
+//			left_t_min, left_point_min, left_normal_min,
+//			left_t_max, left_point_max, left_normal_max,
+//			right_t_min, right_point_min, right_normal_min,
+//			right_t_max, right_point_max, right_normal_max,
+//			left_matID, right_matID
+//			);
+//	}
+//
+//}
 
 __host__ __device__ float csgIntersectionTest(Geom csg, Ray r,
 	Geom csg_primitive1, Geom csg_primitive2,

@@ -94,5 +94,21 @@ struct ShadeableIntersection {
 	int hit_geom_index;
 };
 
-// test csg primitives
-extern Geom csg_box, csg_sphere;
+// constructive solid geometry
+enum CSGOPS
+{
+	DIFF,
+	DIFF_INV,
+	UNION,
+	INTERSECT
+};
+
+struct CSGNode
+{
+	CSGNode* leftG;
+	CSGNode* rightG;
+
+	Geom* geo;
+	CSGOPS op;
+
+};

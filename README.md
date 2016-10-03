@@ -27,11 +27,11 @@ Reference : slides from CIS560 computer graphics.
  
 | A - B | B - A|
 |------|------|
-|![](renderings/osg_difference_test.png)|![](renderings/osg_difference_test2.png)|
+|![](renderings/csg_difference_test.png)|![](renderings/csg_difference_test2.png)|
  
 |A Union B| A Intersect B|
 |------|------|
-|![](renderings/osg_union_test.png)|![](renderings/osg_intersect_test.png)|
+|![](renderings/csg_union_test.png)|![](renderings/csg_intersect_test.png)|
 
 ## Core Features
 | transmission test (with AA)|
