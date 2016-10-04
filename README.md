@@ -22,6 +22,7 @@ CUDA Path Tracer
 
 ## Overview
 ![](renderings/overview.png)
+
 In this rendering, features include diffuse/reflective/refractive(Fresnel) materials, differently textured cube/sphere, motion blur(the shaking red cube) and Constructive Solid Geometry(not real).
 
 For more renderings:
@@ -30,7 +31,7 @@ For more renderings:
 |------|------|
 |![](renderings/overview_more.png)|![](renderings/overview_dof.png)| 
 
-The textured refractive sphere is inside a CSG object, which is constructed by red cube difference green sphere. There are not one geometry.
+The textured refractive sphere is inside a CSG object, which is constructed by red cube difference green sphere. There are not one geometry. The caustic effect caused(projected) by textured sphere can also be captured well.
 
 All features mentioned above can be modified in input file. See below. 
 
