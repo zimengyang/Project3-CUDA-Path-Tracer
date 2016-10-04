@@ -47,7 +47,7 @@ void Scene::InitializeCSGTree()
 	csg_box.materialid = 2; // red
 	csg_box.translation = glm::vec3(0, 0, 0);
 	csg_box.rotation = glm::vec3(0, 0, 0);
-	csg_box.scale = glm::vec3(3, 3, 3);
+	csg_box.scale = glm::vec3(1,1,1);
 	csg_box.hasMotionBlur = false;
 	csg_box.transform = utilityCore::buildTransformationMatrix(
 		csg_box.translation, csg_box.rotation, csg_box.scale);
@@ -56,9 +56,9 @@ void Scene::InitializeCSGTree()
 
 	csg_sphere.type = SPHERE;
 	csg_sphere.materialid = 3; // green
-	csg_sphere.translation = glm::vec3(0, 0.5f, 0);
+	csg_sphere.translation = glm::vec3(0, 0, 0);
 	csg_sphere.rotation = glm::vec3(0, 0, 0);
-	csg_sphere.scale = glm::vec3(3.2f, 3.2f, 3.2f);
+	csg_sphere.scale = glm::vec3(1.3f, 1.3f, 1.3f);
 	csg_sphere.hasMotionBlur = false;
 	csg_sphere.transform = utilityCore::buildTransformationMatrix(
 		csg_sphere.translation, csg_sphere.rotation, csg_sphere.scale);

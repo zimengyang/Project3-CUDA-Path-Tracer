@@ -1,0 +1,244 @@
+// Emissive material (light)
+MATERIAL 0
+RGB         1 1 1
+SPECEX      0
+SPECRGB     0 0 0
+REFL        0
+REFR        0
+REFRIOR     0
+EMITTANCE   5
+TEXTURE     NULL
+
+// Diffuse white
+MATERIAL 1
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     0 0 0
+REFL        0
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     NULL
+
+// Diffuse red
+MATERIAL 2
+RGB         .85 .35 .35
+SPECEX      0
+SPECRGB     0 0 0
+REFL        0
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     NULL
+
+// Diffuse green
+MATERIAL 3
+RGB         .35 .85 .35
+SPECEX      0
+SPECRGB     0 0 0
+REFL        0
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     NULL
+
+// imperfect Specular white
+MATERIAL 4
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     .98 .98 .98
+REFL        0.1
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     NULL
+
+// Specular golden!
+MATERIAL 5
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     .7 .7 .1
+REFL        1
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     NULL
+
+// Transmissive white + reflection + diffuse
+MATERIAL 6
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     .98 .98 .98
+REFL        0.1
+REFR        0.2
+REFRIOR     2.5
+EMITTANCE   0
+TEXTURE     NULL
+
+// Transmissive white
+MATERIAL 7
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     .98 .98 .98
+REFL        0
+REFR        1
+REFRIOR     2.5
+EMITTANCE   0
+TEXTURE     NULL
+
+// textured white
+MATERIAL 8
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     0 0 0
+REFL        0
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     tex_1.png
+
+// textured white 2
+MATERIAL 9
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     0 0 0
+REFL        0
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     flowers.jpg
+
+// checker
+MATERIAL 10
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     0 0 0
+REFL        0
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     flowers.jpg
+
+// checker
+MATERIAL 11
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     .98 .98 .98
+REFL        0
+REFR        1
+REFRIOR     2.6
+EMITTANCE   0
+TEXTURE     tex_3.jpg
+
+// specular reflection
+MATERIAL 12
+RGB         .98 .98 .98
+SPECEX      0
+SPECRGB     .98 .98 .98
+REFL        1
+REFR        0
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     NULL
+
+// Camera
+CAMERA
+RES         800 800
+FOVY        45
+ITERATIONS  5000
+DEPTH       8
+FILE        cornell
+EYE         0.0 5 10.5
+LOOKAT      0 5 0
+UP          0 1 0
+DOF         0.6 10.5
+
+// Ceiling light
+OBJECT 0
+cube
+material 0
+TRANS       0 10 0
+ROTAT       0 0 0
+SCALE       3 .3 3
+
+// Floor
+OBJECT 1
+cube
+material 1
+TRANS       0 0 0
+ROTAT       0 0 0
+SCALE       10 .01 10
+
+// Ceiling
+OBJECT 2
+cube
+material 1
+TRANS       0 10 0
+ROTAT       0 0 90
+SCALE       .01 10 10
+
+// Back wall
+OBJECT 3
+cube
+material 1
+TRANS       0 5 -5
+ROTAT       0 90 0
+SCALE       .01 10 10
+
+// Left wall
+OBJECT 4
+cube
+material 12
+TRANS       -5 5 0
+ROTAT       0 0 0
+SCALE       .01 10 10
+
+// Right wall
+OBJECT 5
+cube
+material 3
+TRANS       5 5 0
+ROTAT       0 0 0
+SCALE       .01 10 10
+
+// csg
+OBJECT 6
+csg
+material 2
+TRANS       0 5 0
+ROTAT       0 45 60
+SCALE       3.2 3.2 3.2
+
+// sphere in csg
+OBJECT 7
+sphere
+material 11
+TRANS       0 5 0
+ROTAT       0 0 0
+SCALE       3.2 3.2 3.2
+
+// motion blur cube
+OBJECT 8
+cube
+material 2
+TRANS       -4.5 7 -1
+ROTAT       0 0 0
+SCALE       1 3 1
+TRANS_DST   -3.5 7 -1
+ROTAT_DST   30 0 0
+
+// refraction sphere
+OBJECT 9
+sphere
+material 7
+TRANS      -3.5 1 1.5
+ROTAT       0 0 0
+SCALE       2 2 2 
+
+// golden mirror
+OBJECT 10
+cube
+material 5
+TRANS       3.5 4 -1.5
+ROTAT       0 35 0
+SCALE       1 8 3
