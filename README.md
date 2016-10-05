@@ -38,7 +38,7 @@ All features mentioned above can be modified in input file. See below.
 ## Texture Mapping 
 Implemention of cube and sphere UV coordinates mapping. 
 
-![](renderings/texture_mapping.png)
+![](renderings/texture_mapping_new.png)
 
 Above rendering : Iterations = 5000, texture mapping for sphere and cube and for diffuse/specular materials.
 
