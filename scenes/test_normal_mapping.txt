@@ -58,7 +58,7 @@ EMITTANCE   0
 TEXTURE     NULL
 NORMAL_MAP  NULL
 
-// Specular golden!
+// Specular blue?
 MATERIAL 5
 RGB         .98 .98 .98
 SPECEX      0
@@ -82,7 +82,7 @@ EMITTANCE   0
 TEXTURE     NULL
 NORMAL_MAP  NULL
 
-// Transmissive white with normal mapping
+// Transmissive white
 MATERIAL 7
 RGB         .98 .98 .98
 SPECEX      0
@@ -92,7 +92,7 @@ REFR        1
 REFRIOR     2.5
 EMITTANCE   0
 TEXTURE     NULL
-NORMAL_MAP  183_norm.JPG
+NORMAL_MAP  NULL
 
 // textured white
 MATERIAL 8
@@ -103,7 +103,7 @@ REFL        0
 REFR        0
 REFRIOR     0
 EMITTANCE   0
-TEXTURE     tex_1.png
+TEXTURE     154.JPG
 NORMAL_MAP  NULL
 
 // textured white 2
@@ -115,19 +115,19 @@ REFL        0
 REFR        0
 REFRIOR     0
 EMITTANCE   0
-TEXTURE     flowers.jpg
-NORMAL_MAP  NULL
+TEXTURE     154.JPG
+NORMAL_MAP  154_norm.JPG
 
 // checker
 MATERIAL 10
 RGB         .98 .98 .98
 SPECEX      0
-SPECRGB     0 0 0
+SPECRGB     .98 .98 .98
 REFL        0
-REFR        0
-REFRIOR     0
+REFR        1
+REFRIOR     2.6
 EMITTANCE   0
-TEXTURE     checker.jpg
+TEXTURE     NULL
 NORMAL_MAP  NULL
 
 // checker
@@ -139,23 +139,11 @@ REFL        0
 REFR        1
 REFRIOR     2.6
 EMITTANCE   0
-TEXTURE     tex_3.jpg
-NORMAL_MAP  NULL
-
-// specular reflection
-MATERIAL 12
-RGB         .98 .98 .98
-SPECEX      0
-SPECRGB     .98 .98 .98
-REFL        1
-REFR        0
-REFRIOR     0
-EMITTANCE   0
 TEXTURE     NULL
-NORMAL_MAP  NULL
+NORMAL_MAP  183_norm.JPG
 
-// texture/normal map sphere
-MATERIAL 13
+// for cube texture/normal mapping
+MATERIAL 12
 RGB         .98 .98 .98
 SPECEX      0
 SPECRGB     .98 .98 .98
@@ -171,12 +159,12 @@ CAMERA
 RES         800 800
 FOVY        45
 ITERATIONS  5000
-DEPTH       10
+DEPTH       8
 FILE        cornell
 EYE         0.0 5 10.5
 LOOKAT      0 5 0
 UP          0 1 0
-DOF         0 10.5
+DOF         0.0 11.5
 
 // Ceiling light
 OBJECT 0
@@ -213,7 +201,7 @@ SCALE       .01 10 10
 // Left wall
 OBJECT 4
 cube
-material 12
+material 2
 TRANS       -5 5 0
 ROTAT       0 0 0
 SCALE       .01 10 10
@@ -221,65 +209,39 @@ SCALE       .01 10 10
 // Right wall
 OBJECT 5
 cube
-material 3
+material 12
 TRANS       5 5 0
 ROTAT       0 0 0
 SCALE       .01 10 10
 
-// csg
+// Sphere
 OBJECT 6
-csg
-material 2
-TRANS       0 5 0
-ROTAT       0 45 60
-SCALE       3.2 3.2 3.2
-
-// sphere in csg
-OBJECT 7
 sphere
-material 11
-TRANS       0 5 0
-ROTAT       0 0 0
-SCALE       3.2 3.2 3.2
-
-// motion blur cube
-OBJECT 8
-cube
-material 2
-TRANS       -4 7 0
-ROTAT       0 0 0
-SCALE       1 3 1
-TRANS_DST   -3 7 0
-ROTAT_DST   30 0 0
-
-// refraction sphere
-OBJECT 9
-sphere
-material 7
-TRANS      -3 1.5 1.5
+material 8
+TRANS       -2 6 -2
 ROTAT       0 0 0
 SCALE       3 3 3
 
-// golden mirror
-OBJECT 10
-cube
-material 5
-TRANS       3.5 4 -1.5
-ROTAT       0 35 0
-SCALE       1 8 3
-
-// texture cube
-OBJECT 11
-cube
-material 9
-TRANS       -1 8 -3
-ROTAT       -35 35 0
-SCALE       2 2 2
-
-// texture/normal mapeed cube
-OBJECT 12
+// Sphere
+OBJECT 7
 sphere
-material 13
-TRANS       3 2.5 3
+material 9
+TRANS       2 6 -2
 ROTAT       0 0 0
-SCALE       2 2 2
+SCALE       3 3 3
+
+// Sphere
+OBJECT 8
+sphere
+material 10
+TRANS       -2 2.5 0
+ROTAT       0 0 0
+SCALE       3 3 3
+
+// Sphere
+OBJECT 9
+sphere
+material 11
+TRANS       2 2.5 0
+ROTAT       0 0 0
+SCALE       3 3 3

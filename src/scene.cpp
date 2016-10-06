@@ -258,7 +258,7 @@ int Scene::loadMaterial(string materialid) {
 		Material newMaterial;
 
 		//load static properties
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 9; i++) {
 			string line;
 			utilityCore::safeGetline(fp_in, line);
 			vector<string> tokens = utilityCore::tokenizeString(line);
@@ -297,6 +297,20 @@ int Scene::loadMaterial(string materialid) {
 					// record new texture, push
 					newMaterial.texId = this->textures.size();
 					this->textures.push_back(new image(texFilename));
+				}
+			}
+			else if (strcmp(tokens[0].c_str(), "NORMAL_MAP") == 0)
+			{
+				string normapFilename = tokens[1];
+				if (strcmp(normapFilename.c_str(), "NULL") == 0)
+				{
+					newMaterial.normapId = -1;
+				}
+				else
+				{
+					// record new texture, push
+					newMaterial.normapId = this->normalMaps.size();
+					this->normalMaps.push_back(new image(normapFilename));
 				}
 			}
 		}

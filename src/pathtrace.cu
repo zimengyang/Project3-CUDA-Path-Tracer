@@ -89,6 +89,8 @@ static ShadeableIntersection * dev_first_bounce_intersections = NULL;
 glm::vec3 ** dev_textures = NULL;
 glm::vec2 * dev_textureSizes = NULL;
 
+glm::vec3 ** dev_normal_maps = NULL;
+glm::vec2 * dev_normal_mapSizes = NULL;
 
 void pathtraceInit(Scene *scene) {
 	hst_scene = scene;
@@ -132,6 +134,24 @@ void pathtraceInit(Scene *scene) {
 	}
 	cudaMemcpy(dev_textures, textures.data(), textureSize * sizeof(glm::vec3*), cudaMemcpyHostToDevice);
 	cudaMemcpy(dev_textureSizes, textureSizes.data(), textureSize * sizeof(glm::vec2), cudaMemcpyHostToDevice);
+	
+	// copy normal maps into device memory
+	int normalMapSize = hst_scene->normalMaps.size();
+	cudaMalloc((void**)&dev_normal_maps, normalMapSize * sizeof(glm::vec3*));
+	cudaMalloc((void**)&dev_normal_mapSizes, normalMapSize * sizeof(glm::vec2));
+	std::vector<glm::vec3*> normal_maps;
+	std::vector<glm::vec2> normal_map_sizes;
+	for (int i = 0; i < normalMapSize; ++i)
+	{
+		int texPixelCount = hst_scene->normalMaps[i]->pixelCount();
+		cudaMalloc((void**)&tmp, texPixelCount * sizeof(glm::vec3));
+		cudaMemcpy(tmp, hst_scene->normalMaps[i]->pixels, texPixelCount * sizeof(glm::vec3), cudaMemcpyHostToDevice);
+		normal_maps.push_back(tmp);
+		normal_map_sizes.push_back(hst_scene->normalMaps[i]->getSize());
+	}
+	cudaMemcpy(dev_normal_maps, normal_maps.data(), normalMapSize * sizeof(glm::vec3*), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_normal_mapSizes, normal_map_sizes.data(), normalMapSize * sizeof(glm::vec2), cudaMemcpyHostToDevice);
+
 	checkCUDAError("pathtraceInit");
 }
 
@@ -151,6 +171,11 @@ void pathtraceFree() {
 	cudaFree(dev_textures);
 	cudaFree(dev_textureSizes);
 
+	// free normal map memory
+	cudaFree(dev_normal_maps);
+	cudaFree(dev_normal_mapSizes);
+
+	// check error
 	checkCUDAError("pathtraceFree");
 }
 
@@ -346,9 +371,13 @@ __global__ void shadingAndEvaluatingBSDF(
 	int num_paths,
 	ShadeableIntersection * shadeableIntersections,
 	PathSegment * pathSegments,
+	Geom * geoms,
+	int geoms_size,
 	Material * materials,
 	glm::vec3** textures,
-	glm::vec2*  textureSizes
+	glm::vec2*  textureSizes,
+	glm::vec3** normal_maps,
+	glm::vec2* normal_mapSizes
 	)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -371,7 +400,7 @@ __global__ void shadingAndEvaluatingBSDF(
 		{
 			glm::vec3 intersectPoint = pathSeg.ray.origin + pathSeg.ray.direction * isx.t;
 			thrust::default_random_engine rng = makeSeededRandomEngine(iter, idx, depth);
-			scatterRay(pathSeg, intersectPoint, isx.surfaceNormal, material, textures, textureSizes, isx.uv, rng);
+			scatterRay(pathSeg, intersectPoint, isx.surfaceNormal, material, textures, textureSizes, isx.uv, rng, normal_maps, normal_mapSizes, geoms[isx.hit_geom_index]);
 			
 			pathSeg.remainingBounces--;
 		}		
@@ -568,9 +597,13 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 			remainingNumPaths,
 			dev_intersections,
 			dev_paths,
+			dev_geoms,
+			hst_scene->geoms.size(),
 			dev_materials,
 			dev_textures,
-			dev_textureSizes
+			dev_textureSizes,
+			dev_normal_maps,
+			dev_normal_mapSizes
 			);
 		checkCUDAError("shading");
 		cudaDeviceSynchronize();

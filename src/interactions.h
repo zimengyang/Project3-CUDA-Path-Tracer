@@ -93,7 +93,10 @@ void scatterRay(
 	glm::vec3** textures,
 	glm::vec2* textureSizes,
 	glm::vec2 uv,
-	thrust::default_random_engine &rng
+	thrust::default_random_engine &rng,
+	glm::vec3** normal_maps,
+	glm::vec2* normal_mapSizes,
+	Geom & hitGeo
 	) 
 {
 	// TODO: implement this.
@@ -123,6 +126,30 @@ void scatterRay(
 
 	glm::vec3 color = glm::vec3(1, 1, 1);
 	glm::vec3 rayD = pathSegment.ray.direction;
+
+	// normal map calculate
+	if (m.normapId != -1)
+	{
+		
+		glm::vec3 normal_mapped = getTextureColor(uv, normal_maps[m.normapId], normal_mapSizes[m.normapId]);
+		normal_mapped = glm::normalize(2.0f * normal_mapped - 1.0f);
+		
+		// TBN matrix
+		glm::vec3 normal_local = glm::normalize(multiplyMV(hitGeo.inverseTransform, glm::vec4(normal, 0.0f)));
+		glm::vec3 up(0, 1, 0);
+		glm::vec3 tangent = glm::normalize(glm::cross(up, normal_local));
+		glm::vec3 bitangent = glm::normalize(glm::cross(normal_local, tangent));
+
+		glm::mat3 TBN;
+		TBN[0] = tangent;
+		TBN[1] = bitangent;
+		TBN[2] = normal_local;
+
+		normal_mapped = glm::normalize(TBN*normal_mapped);
+		
+		normal = glm::normalize(multiplyMV(hitGeo.invTranspose, glm::vec4(normal_mapped, 0.f)));
+	}
+
 	// calculate and assign new ray direction
 	glm::vec3 dir;
 	switch (index)
@@ -186,5 +213,6 @@ void scatterRay(
 	{
 		color *= getTextureColor(uv, textures[m.texId], textureSizes[m.texId]);
 	}
+	//pathSegment.color *= glm::abs(glm::dot(normal, pathSegment.ray.direction)) * color;
 	pathSegment.color *= color;
 }

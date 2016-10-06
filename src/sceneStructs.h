@@ -52,6 +52,7 @@ struct Material {
     float emittance;
 
 	int texId;
+	int normapId;
 };
 
 struct Camera {

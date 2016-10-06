@@ -32,4 +32,5 @@ public:
 	// keep a pointer vector intead of object vector
 	// recycle
 	std::vector<image*> textures;
+	std::vector<image*> normalMaps;
 };

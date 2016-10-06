@@ -15,7 +15,7 @@ CUDA Path Tracer
 * [ ] More on the way...
   * [x] Fresnel Refraction(Schlick's Approximation), Depth of Field and Stochastic AA
   * [x] Motion Blur
-  * [x] Texture Mapping
+  * [x] Texture Mapping and Bump Mapping
   * [ ] Constructive Solid Geometry 
 * [ ] ! performance anylasis for `reshuffleByMaterialIDs` and `useFirstBounceIntersectionCache`
 * [ ] clean up readme, add reference.
@@ -23,7 +23,8 @@ CUDA Path Tracer
 ## Overview
 ![](renderings/overview.png)
 
-In this rendering, features include diffuse/reflective/refractive(Fresnel) materials, differently textured cube/sphere, motion blur(the shaking red cube) and Constructive Solid Geometry(not real).
+In this rendering, features include diffuse/reflective/refractive(Fresnel) materials, differently textured cube/sphere with normal mapping, motion blur(the shaking red cube) and Constructive Solid Geometry(not real).
+The textured refractive sphere is inside a CSG object, which is constructed by red cube difference green sphere. There are not one geometry. The caustic effect caused(projected) by textured sphere can also be captured well.
 
 For more renderings:
 
@@ -31,48 +32,16 @@ For more renderings:
 |------|------|
 |![](renderings/overview_more.png)|![](renderings/overview_dof.png)| 
 
-The textured refractive sphere is inside a CSG object, which is constructed by red cube difference green sphere. There are not one geometry. The caustic effect caused(projected) by textured sphere can also be captured well.
-
-All features mentioned above can be modified in input file. See below. 
-
-## Texture Mapping 
-Implemention of cube and sphere UV coordinates mapping. 
-
-![](renderings/texture_mapping_new.png)
-
-Above rendering : Iterations = 5000, texture mapping for sphere and cube and for diffuse/specular materials.
-
-For now, things can be done:
-* Loading multiple texture files into GPU, calculate texture color while path tracing.
-* Can be combined with different materials(reflect,refract and diffuse).
-* Specify input texture file in input file, "NULL" means no texture.
-* Use [stb_image](https://github.com/nothings/stb). The same thing as image class in framework.
-```
-....
-REFRIOR     0
-EMITTANCE   0
-TEXTURE     texture_sphere.png
-```
-
-## Constructive Solid Geometry not yet
-Reference : slides from CIS560 computer graphics.
-
-**TEST basic ops correctness, low iterations**
-* Basic TEST : A is a red cube, B is a green sphere. Hardcoded, to-do: build treREFRIOR     0
-EMITTANCE   0
-TEXTURE     NULLe.
-* Test renderings: ~ 200 iterations.
-* Build entire stucture in reference paper requires much longer time... don't know what to do with it
-
-| A - B | B - A|
+|texture mapping only|texture and normal mapping|
 |------|------|
-|![](renderings/csg_difference_test.png)|![](renderings/csg_difference_test2.png)|
- 
-|A Union B| A Intersect B|
-|------|------|
-|![](renderings/csg_union_test.png)|![](renderings/csg_intersect_test.png)|
+|![](renderings/texture_mapping_without_normal_mapping.png)|![](renderings/texture_with_normal_mapping.png)|
 
-## Core Features
+In above renderings, right image is for illustrating the effects of normal mapping. Left spheres are only textured, right spheres are textured and normal mapped.
+
+All features mentioned above can be modified in input file. See below for details.  
+
+
+## Basic Features
 | transmission test (with AA)|
 |----|
 |![](renderings/roadmap_cornell_aa.png)|
@@ -88,13 +57,12 @@ TEXTURE     NULLe.
 * sphere in right rendering is 0.5 reflectance combined with diffuse white [need better approximation]
 
 
-## Stochastic Antialiasing & Depth of Field
+## Fresnel Refraction & Stochastic Antialiasing & Depth of Field
 ### Fresnel Refraction using Schlick's Approximation
 Implement a Fresnel Effect refraction evaluation using [Schlick's Approximation](https://en.wikipedia.org/wiki/Schlick%27s_approximation).
 In the following rendering, right sphere is rendered using Fresnel refraction effect. Left sphere is rendered with 0.2 refraction + 0.1 reflection and 0.7 diffuse. Fresnel effect can better approximate the reflection contribution between two media.
 
 ![](renderings/roadmap_cornell_fresnelRefraction.png)
-
 
 ### Depth of Field
 |focal length = 10| focal length = 11.5|
@@ -110,7 +78,6 @@ DOF   1 10.5
 ```
 First variable means len radius, second means focal length.
 
-
 ### Stochastic antialiasing:
 
 |with AA| without AA|
@@ -120,6 +87,7 @@ First variable means len radius, second means focal length.
 For the detail comparison:
 
 ![](renderings/AA_Comp.png)
+
 
 ## Motion Blur
 |rotation + translation|scale + translation + non Motion Blur object|
@@ -147,5 +115,53 @@ See `scenes/test_motion_blur.txt` for input details.
 During interpolation, destination posture has higher possibility(10%) to be choosen. This will make the object look like ending up somewhere instead of floating all around.
 
 Future : faster interpolation
+
+
+## Texture Mapping and Bump Mapping
+Implemention of cube and sphere UV coordinates mapping and normal mapping. 
+
+|texture mapping only|texture mapping and normal mapping|
+|------|------|
+|![](renderings/texture_mapping_without_normal_mapping.png)|![](renderings/texture_with_normal_mapping.png)|
+
+|texture 1|texture 2|normal map 1|normal map 2|
+|------|------|------|------|
+|![](scenes/tex_nor_maps/154.JPG)|![](scenes/tex_nor_maps/tex_3.JPG)|![](scenes/tex_nor_maps/154.JPG)|![](scenes/tex_nor_maps/183_norm.JPG)|
+
+Above rendering : Iterations = 5000, texture mapping for sphere and cube and for diffuse/specular materials.
+Normal mapping can enhance reality of renderings.
+
+For now, things can be done:
+* Loading multiple texture files into GPU, calculate texture color while path tracing.
+* Can be combined with different materials(reflect,refract and diffuse).
+* Specify input texture file in input file, "NULL" means no texture(or normal mapping texture).
+* Use [stb_image](https://github.com/nothings/stb). The same thing as image class in framework.
+
+```
+....
+REFRIOR     0
+EMITTANCE   0
+TEXTURE     texture_sphere.png
+NORMAL_MAP  184.JPG
+```
+
+## Constructive Solid Geometry **not yet**
+Reference : slides from CIS560 computer graphics.
+
+**TEST basic ops correctness, low iterations**
+* Basic TEST : A is a red cube, B is a green sphere. Hardcoded, to-do: build treREFRIOR     0
+EMITTANCE   0
+TEXTURE     NULLe.
+* Test renderings: ~ 200 iterations.
+* Build entire stucture in reference paper requires much longer time... don't know what to do with it
+
+| A - B | B - A|
+|------|------|
+|![](renderings/csg_difference_test.png)|![](renderings/csg_difference_test2.png)|
+ 
+|A Union B| A Intersect B|
+|------|------|
+|![](renderings/csg_union_test.png)|![](renderings/csg_intersect_test.png)|
+
 
 ## optimization?
