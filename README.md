@@ -126,7 +126,7 @@ Implemention of cube and sphere UV coordinates mapping and normal mapping.
 
 |texture 1|texture 2|normal map 1|normal map 2|
 |------|------|------|------|
-|![](scenes/tex_nor_maps/154.JPG)|![](scenes/tex_nor_maps/tex_3.JPG)|![](scenes/tex_nor_maps/154.JPG)|![](scenes/tex_nor_maps/183_norm.JPG)|
+|![](scenes/tex_nor_maps/154.JPG)|![](scenes/tex_nor_maps/tex_3.jpg)|![](scenes/tex_nor_maps/154_norm.JPG)|![](scenes/tex_nor_maps/183_norm.JPG)|
 
 Above rendering : Iterations = 5000, texture mapping for sphere and cube and for diffuse/specular materials.
 Normal mapping can enhance reality of renderings.
