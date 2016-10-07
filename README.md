@@ -56,6 +56,21 @@ All features mentioned above can be modified in input file. See below for detail
 * Iterations: ~2000 
 * sphere in right rendering is 0.5 reflectance combined with diffuse white [need better approximation]
 
+### Comparison for Sort by Material ID and First Bounce Intersection Cache
+Three options: `reshuffleByMaterialIDs`, `useFirstBounceIntersectionCache` and `stochasticAntialiasing` can be toggled in `scene->state` varialbe.
+
+Test scene: `scenes/test_recording_time.txt`.
+
+For following comparison, use ***opt_id*** for reshuffleByMaterialIDs, use ***opt_fbi*** for useFirstBounceIntersectionCache and use ***opt_aa*** for stochasticAntialiasing.
+
+In following chart, only one optimization was applied for each test case. None means all three opts are false.
+
+![](renderings/opts.png)
+
+* sorting by material id: extremely slow. Sorting 640000(maximum) rays twice for each depth intersections? In this framework, path segments and intersections are separated as two arrays, which means either we sort them twice to make them relate to each other or combine them together. Either way will destroy the performance. So the framework is not working well this option and this option is useless.
+* first bounce intersection cache: this option is trash when applying anti-aliasing, AA is used for improve rendering quality with only small extra cost, which can be proved from the chart above. But the first bounce intersection cache is no reason to exist and no reason to test it across different ray depths. Useless.
+* stochastic antialising: use trivial cost and improve the rendering quality. Worth to do.
+
 
 ## Fresnel Refraction & Stochastic Antialiasing & Depth of Field
 ### Fresnel Refraction using Schlick's Approximation
@@ -143,7 +158,19 @@ REFRIOR     0
 EMITTANCE   0
 TEXTURE     texture_sphere.png
 NORMAL_MAP  184.JPG
+....
 ```
+### Comparison Between File-loaded and Procedural Texture
+For procedural texture, texture color is calculated intead of being read from texture file. I didn't implement a complex procedural texture computation function, I just followed the pbrt [10.5.2] and tried to implement checkerboard texture for sphere. And then I compared the averaged iteration time for these too:
+
+|checkerboard texture = 165.34ms|file-loaded texture = 165.10ms|
+|------|------|
+|![](renderings/checkerboard_texture_165.34.png)|![](renderings/fileloaded_texture_165.10.png)|
+
+For this simple comparison, the calculation will have more performance impact than texture file I/O. For Complex procedural texture, it might reduce the performance.
+
+But procedural texture has benefits like: infinite resolution, easily generating small texture. But file-loaded texture is able to load much more complex texture file.
+
 
 ## Constructive Solid Geometry **not yet**
 Reference : slides from CIS560 computer graphics.

@@ -471,7 +471,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 	const int pixelcount = cam.resolution.x * cam.resolution.y;
 	const bool reshuffleByMaterialIDs = hst_scene->state.reshuffleByMaterialIDs;
 	const bool useFirstBounceIntersectionCache = hst_scene->state.useFirstBounceIntersectionCache;
-	const bool stochasticAntialising = hst_scene->state.stochasticAntiliasing;
+	const bool stochasticAntialising = hst_scene->state.stochasticAntialiasing;
 
 	// 2D block for generating ray from camera
 	const dim3 blockSize2d(8, 8);

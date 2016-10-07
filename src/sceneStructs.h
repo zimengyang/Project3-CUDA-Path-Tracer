@@ -77,7 +77,7 @@ struct RenderState {
 	bool reshuffleByMaterialIDs;
 	bool useFirstBounceIntersectionCache;
 
-	bool stochasticAntiliasing;
+	bool stochasticAntialiasing;
 };
 
 struct PathSegment {

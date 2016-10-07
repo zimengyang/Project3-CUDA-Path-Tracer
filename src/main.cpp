@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     scene = new Scene(sceneFile);
 	scene->state.reshuffleByMaterialIDs = false;
 	scene->state.useFirstBounceIntersectionCache = false;
-	scene->state.stochasticAntiliasing = true;
+	scene->state.stochasticAntialiasing = true;
 
     // Set up camera stuff from loaded path tracer settings
     iteration = 0;

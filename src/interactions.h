@@ -211,8 +211,17 @@ void scatterRay(
 	// calculate texcolor
 	if (m.texId != -1)
 	{
+		// file-loaded texture
 		color *= getTextureColor(uv, textures[m.texId], textureSizes[m.texId]);
+
+		// checker texture 
+		/*int idx = int(uv.x * 1024) / 80 + int(uv.y * 1024) / 80;
+		if ((idx) % 2 == 0)
+			color *= 0;
+		else
+			color = glm::vec3(1, 1, 1);*/
 	}
+	
 	//pathSegment.color *= glm::abs(glm::dot(normal, pathSegment.ray.direction)) * color;
 	pathSegment.color *= color;
 }
