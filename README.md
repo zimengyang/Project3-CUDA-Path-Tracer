@@ -23,7 +23,7 @@ CUDA Path Tracer
 ## Overview
 ![](renderings/overview.png)
 
-In this rendering, features include diffuse/reflective/refractive(Fresnel) materials, differently textured cube/sphere with normal mapping, motion blur(the shaking red cube) and Constructive Solid Geometry(not real).
+Above rendering is demonstrating features that include diffuse/reflective/refractive(Fresnel) materials, differently textured cube/sphere with normal mapping, motion blur(the shaking red cube) and Constructive Solid Geometry(not real, only basic ideas).
 The textured refractive sphere is inside a CSG object, which is constructed by red cube difference green sphere. There are not one geometry. The caustic effect caused(projected) by textured sphere can also be captured well.
 
 For more renderings:
@@ -36,7 +36,7 @@ For more renderings:
 |------|------|
 |![](renderings/texture_mapping_without_normal_mapping.png)|![](renderings/texture_with_normal_mapping.png)|
 
-In above renderings, right image is for illustrating the effects of normal mapping. Left spheres are only textured, right spheres are textured and normal mapped.
+In above renderings, right image is for illustrating the effects of normal mapping. Left two spheres are only textured, right two spheres are textured and normal mapped.
 
 All features mentioned above can be modified in input file. See below for details.  
 
@@ -57,9 +57,9 @@ All features mentioned above can be modified in input file. See below for detail
 |![](renderings/roadmap_cornell_diffuse_2008sample.png)|![](renderings/roadmap_cornell_non_perfect_specular.png)|
 
 In above rendering, right image is for demonstrating the influence of specular exponents. Three spheres, from left to right:
-very high specular exponent(performs like a perfect specular), medium specular exponent and low specular exponent(performs more like a diffuse).
-Reference link: http://http.developer.nvidia.com/GPUGems3/gpugems3_ch20.html
+very high specular exponent (performs like a perfect specular), medium specular exponent and low specular exponent (performs more like a diffuse).
 
+Reference link: http://http.developer.nvidia.com/GPUGems3/gpugems3_ch20.html
 * Iterations: ~2000 
 * Apply GPU Gem 3, Chpt 20 - Non perfect specular material approximation
 
@@ -74,8 +74,8 @@ In following chart, only one optimization was applied for each test case. None m
 
 ![](renderings/opts.png)
 
-* sorting by material id: extremely slow. Sorting 640000(maximum) rays twice for each depth intersections? In this framework, path segments and intersections are separated as two arrays, which means either we sort them twice to make them relate to each other or combine them together. Either way will destroy the performance. So the framework is not working well this option and this option is useless.
-* first bounce intersection cache: this option is trash when applying anti-aliasing, AA is used for improve rendering quality with only small extra cost, which can be proved from the chart above. But the first bounce intersection cache is no reason to exist and no reason to test it across different ray depths. Useless.
+* sorting by material id: extremely slow. Sorting 640000(maximum) rays twice for each depth intersections? In this framework, path segments and intersections are separated as two arrays, which means either to sort them twice to make them relate to each other or combine them together. Either way will destroy the performance. So the framework is not working well this option and this option is useless.
+* first bounce intersection cache: this option is not acceptable and applicable when applying anti-aliasing, AA is used for improving rendering quality with only small extra cost, which can be proved from the chart above. 
 * stochastic antialising: use trivial cost and improve the rendering quality. Worth to do.
 
 
@@ -159,6 +159,7 @@ For now, things can be done:
 * Specify input texture file in input file, "NULL" means no texture(or normal mapping texture).
 * Use [stb_image](https://github.com/nothings/stb). The same thing as image class in framework.
 
+Reference: pbrt and https://en.wikipedia.org/wiki/Bump_mapping.
 ```
 ....
 REFRIOR     0
@@ -167,6 +168,7 @@ TEXTURE     texture_sphere.png
 NORMAL_MAP  184.JPG
 ....
 ```
+
 ### Comparison Between File-loaded and Procedural Texture
 For procedural texture, texture color is calculated intead of being read from texture file. I didn't implement a complex procedural texture computation function, I just followed the pbrt [10.5.2] and tried to implement checkerboard texture for sphere. And then I compared the averaged iteration time for these too:
 
@@ -178,16 +180,10 @@ For this simple comparison, the calculation will have more performance impact th
 
 But procedural texture has benefits like: infinite resolution, easily generating small texture. But file-loaded texture is able to load much more complex texture file.
 
+Reference: https://en.wikipedia.org/wiki/Procedural_texture.
 
-## Constructive Solid Geometry **not yet**
+## Constructive Solid Geometry **not fully implemented**
 Reference : slides from CIS560 computer graphics.
-
-**TEST basic ops correctness, low iterations**
-* Basic TEST : A is a red cube, B is a green sphere. Hardcoded, to-do: build treREFRIOR     0
-EMITTANCE   0
-TEXTURE     NULLe.
-* Test renderings: ~ 200 iterations.
-* Build entire stucture in reference paper requires much longer time... don't know what to do with it
 
 | A - B | B - A|
 |------|------|
@@ -196,6 +192,10 @@ TEXTURE     NULLe.
 |A Union B| A Intersect B|
 |------|------|
 |![](renderings/csg_union_test.png)|![](renderings/csg_intersect_test.png)|
+**Testing for basic ops correctness, low iterations.**
+* Basic operations testings: A is a red cube, B is a green sphere. Hardcoded, to-do: build tree.
+* Test renderings: ~ 200 iterations.
+* Build entire stucture in reference paper requires much longer time... need to study the paper.
 
 
-## optimization?
+## Future: optimization
