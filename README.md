@@ -42,6 +42,8 @@ All features mentioned above can be modified in input file. See below for detail
 
 
 ## Basic Features
+### Diffuse, Non Perfect Specular, Refraction and Weighted Material
+
 | transmission test (with AA)|
 |----|
 |![](renderings/roadmap_cornell_aa.png)|
@@ -50,11 +52,16 @@ All features mentioned above can be modified in input file. See below for detail
   * perfect transmission (right sphere): 1.0 refraction
   * weighted material (left sphere): 0.8 refraction + 0.1 reflection + 0.1 diffuse
 
-|diffuse|perfect-specular and imperfect-specular|
+|diffuse|non perfect specular vs different specular exponents|
 |------|------|
-|![](renderings/roadmap_cornell_diffuse_2008sample.png)|![](renderings/roadmap_cornell_imperfect_specular_2000sample.png)|
+|![](renderings/roadmap_cornell_diffuse_2008sample.png)|![](renderings/roadmap_cornell_non_perfect_specular.png)|
+
+In above rendering, right image is for demonstrating the influence of specular exponents. Three spheres, from left to right:
+very high specular exponent(performs like a perfect specular), medium specular exponent and low specular exponent(performs more like a diffuse).
+Reference link: http://http.developer.nvidia.com/GPUGems3/gpugems3_ch20.html
+
 * Iterations: ~2000 
-* sphere in right rendering is 0.5 reflectance combined with diffuse white [need better approximation]
+* Apply GPU Gem 3, Chpt 20 - Non perfect specular material approximation
 
 ### Comparison for Sort by Material ID and First Bounce Intersection Cache
 Three options: `reshuffleByMaterialIDs`, `useFirstBounceIntersectionCache` and `stochasticAntialiasing` can be toggled in `scene->state` varialbe.

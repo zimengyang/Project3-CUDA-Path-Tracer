@@ -1,6 +1,7 @@
 #pragma once
 
 #include "intersections.h"
+#include <glm/gtx/rotate_vector.hpp>
 
 // CHECKITOUT
 /**
@@ -155,9 +156,32 @@ void scatterRay(
 	switch (index)
 	{
 	case 1: // specular-reflective
-		dir = glm::reflect(pathSegment.ray.direction, normal);
+	{
+		// non - perfect reflection
+		// reference: GPU Gem 3, Chapter 20
+		// http://http.developer.nvidia.com/GPUGems3/gpugems3_ch20.html
+		float thetaS = glm::acos(glm::pow(u01(rng), 1.0f / (m.specular.exponent + 1.0f)));
+		float phiS = 2.0f * PI * u01(rng);
+
+		glm::vec3 sampledDirection = 
+			glm::vec3(
+			glm::cos(phiS)*glm::sin(thetaS),
+			glm::sin(phiS)*glm::sin(thetaS),
+			glm::cos(thetaS));
+
+		glm::vec3 perfectReflecDir = glm::normalize(glm::reflect(pathSegment.ray.direction, normal));
+		glm::vec3 up(0, 0, 1);
+		glm::vec3 axis = glm::normalize(glm::cross(up, perfectReflecDir));
+
+		float angle = glm::acos(glm::dot(perfectReflecDir, up));
+
+		dir = glm::rotate(sampledDirection, angle, axis);
+		
+		// perfect reflection
+		//dir = glm::reflect(pathSegment.ray.direction, normal);
 		color = m.color * m.specular.color;
 		break;
+	}
 	case 2: // specular-refractive
 	{
 		// naive refract computation
