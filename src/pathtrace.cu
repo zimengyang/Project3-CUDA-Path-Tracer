@@ -292,6 +292,8 @@ __global__ void pathTraceOneBounce(
 	if (path_index < num_paths)
 	{
 		PathSegment pathSegment = pathSegments[path_index];
+		if (pathSegment.remainingBounces <= 0)
+			return;
 
 		float t;
 		glm::vec3 intersect_point;
@@ -472,6 +474,7 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 	const bool reshuffleByMaterialIDs = hst_scene->state.reshuffleByMaterialIDs;
 	const bool useFirstBounceIntersectionCache = hst_scene->state.useFirstBounceIntersectionCache;
 	const bool stochasticAntialising = hst_scene->state.stochasticAntialiasing;
+	const bool useStreamCompaction = hst_scene->state.useStreamCompaction;
 
 	// 2D block for generating ray from camera
 	const dim3 blockSize2d(8, 8);
@@ -608,35 +611,41 @@ void pathtrace(uchar4 *pbo, int frame, int iter) {
 		checkCUDAError("shading");
 		cudaDeviceSynchronize();
 
-		// update terminated segments to final image
-		kernUpdateTerminatedSegmentsToImage << <numblocksPathSegmentTracing, blockSize1d >> >(
-			remainingNumPaths,
-			dev_image,
-			dev_paths
-			);
-		checkCUDAError("udpate terminated segments");
-		cudaDeviceSynchronize();
-
-		// stream compaction, delete that paths that remainingBounces <= 0
-		//std::cout << "before compaction = " << remainingNumPaths;
-		PathSegment *newPathEnd = thrust::remove_if(thrust::device, dev_paths, dev_paths + remainingNumPaths, terminate_path());
-		if (newPathEnd != NULL)
+		if (useStreamCompaction)
 		{
-			remainingNumPaths = newPathEnd - dev_paths;
-		}
-		else
-		{
-			remainingNumPaths = 0;
-		}
-		checkCUDAError("thrust::remove_if");
-		//std::cout << ", after compaction = " << remainingNumPaths << std::endl;
+			// update terminated segments to final image
+			kernUpdateTerminatedSegmentsToImage << <numblocksPathSegmentTracing, blockSize1d >> >(
+				remainingNumPaths,
+				dev_image,
+				dev_paths
+				);
+			checkCUDAError("udpate terminated segments");
+			cudaDeviceSynchronize();
 
+			// stream compaction, delete that paths that remainingBounces <= 0
+			//std::cout << "before compaction = " << remainingNumPaths;
+			PathSegment *newPathEnd = thrust::remove_if(thrust::device, dev_paths, dev_paths + remainingNumPaths, terminate_path());
+			if (newPathEnd != NULL)
+			{
+				remainingNumPaths = newPathEnd - dev_paths;
+			}
+			else
+			{
+				remainingNumPaths = 0;
+			}
+			checkCUDAError("thrust::remove_if");
+			std::cout << "Iteration #" << iter << " ==> After compaction, number of rays = " << remainingNumPaths << std::endl;
+		}
+		
 		iterationComplete = (depth >= traceDepth || remainingNumPaths <= 0); // TODO: should be based off stream compaction results.
 	}
 
 	// Assemble this iteration and apply it to the image
-	//dim3 numBlocksPixels = (pixelcount + blockSize1d - 1) / blockSize1d;
-	//finalGather << <numBlocksPixels, blockSize1d >> >(num_paths, dev_image, dev_paths);
+	if (!useStreamCompaction)
+	{
+		dim3 numBlocksPixels = (pixelcount + blockSize1d - 1) / blockSize1d;
+		finalGather << <numBlocksPixels, blockSize1d >> >(num_paths, dev_image, dev_paths);
+	}
 
 	///////////////////////////////////////////////////////////////////////////
 

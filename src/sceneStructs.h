@@ -78,6 +78,8 @@ struct RenderState {
 	bool useFirstBounceIntersectionCache;
 
 	bool stochasticAntialiasing;
+
+	bool useStreamCompaction;
 };
 
 struct PathSegment {

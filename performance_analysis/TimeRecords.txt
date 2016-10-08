@@ -1,0 +1,72 @@
+
+test scene file: test_recording_time.txt
+
+1.
+reshuffleByMaterialIDs = true;
+useFirstBounceIntersectionCache = false;
+stochasticAntialiasing = false;
+
+iteration time = 504.501ms
+
+2.
+reshuffleByMaterialIDs = false
+useFirstBounceIntersectionCache = false;
+stochasticAntialiasing = false;
+
+iteration time = 165.982ms
+
+3.
+reshuffleByMaterialIDs = true;
+useFirstBounceIntersectionCache = true;
+stochasticAntialiasing = false;
+
+iteration time = 150.563ms
+
+4.
+reshuffleByMaterialIDs = false
+useFirstBounceIntersectionCache = false
+stochasticAntialiasing = true
+
+iteration time = 166.893ms
+
+
+
+///////////////
+Stream Compaction
+
+Test scene: test_stream_compaction.txt
+
+without SC: 	256.891ms/iter
+with SC:	192.781ms/iter
+
+within a single iteration: number of unterminated rays = 
+
+originnal number of rays = 640000 (800 * 800 image size)
+Iteration #5 ==> After compaction, number of rays = 462788
+Iteration #5 ==> After compaction, number of rays = 312659
+Iteration #5 ==> After compaction, number of rays = 247985
+Iteration #5 ==> After compaction, number of rays = 201162
+Iteration #5 ==> After compaction, number of rays = 165601
+Iteration #5 ==> After compaction, number of rays = 137055
+Iteration #5 ==> After compaction, number of rays = 113966
+
+
+
+//////////////
+open scene
+Test scene: test_open_scene.txt
+
+add front all walls
+
+iteration time = 427.93ms
+
+original number of rays = 640000 (800 * 800 image size)
+Iteration #16 ==> After compaction, number of rays = 622845
+Iteration #16 ==> After compaction, number of rays = 613471
+Iteration #16 ==> After compaction, number of rays = 603827
+Iteration #16 ==> After compaction, number of rays = 594090
+Iteration #16 ==> After compaction, number of rays = 584376
+Iteration #16 ==> After compaction, number of rays = 574975
+Iteration #16 ==> After compaction, number of rays = 565717
+Iteration #16 ==> After compaction, number of rays = 0
+

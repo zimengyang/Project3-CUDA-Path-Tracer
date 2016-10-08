@@ -45,6 +45,7 @@ int main(int argc, char** argv) {
 	scene->state.reshuffleByMaterialIDs = false;
 	scene->state.useFirstBounceIntersectionCache = false;
 	scene->state.stochasticAntialiasing = true;
+	scene->state.useStreamCompaction = true;
 
     // Set up camera stuff from loaded path tracer settings
     iteration = 0;
