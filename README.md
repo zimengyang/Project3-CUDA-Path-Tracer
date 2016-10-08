@@ -16,9 +16,7 @@ CUDA Path Tracer
   * [x] Fresnel Refraction(Schlick's Approximation), Depth of Field and Stochastic AA
   * [x] Motion Blur
   * [x] Texture Mapping and Bump Mapping
-  * [ ] Constructive Solid Geometry 
-* [ ] ! performance anylasis for `reshuffleByMaterialIDs` and `useFirstBounceIntersectionCache`
-* [ ] clean up readme, add reference.
+  * [ ] Constructive Solid Geometry (not fully implemented)
 
 ## Overview
 ![](renderings/overview.png)
@@ -72,9 +70,9 @@ For following comparison, use ***opt_id*** for reshuffleByMaterialIDs, use ***op
 
 In following chart, only one optimization was applied for each test case. None means all three opts are false.
 
-![](renderings/opts.png)
+![](performance_analysis/opts.png)
 
-* sorting by material id: extremely slow. Sorting 640000(maximum) rays twice for each depth intersections? In this framework, path segments and intersections are separated as two arrays, which means either to sort them twice to make them relate to each other or combine them together. Either way will destroy the performance. So the framework is not working well this option and this option is useless.
+* sorting by material id: extremely slow. Sorting 640000(maximum) rays twice for each depth intersections? In this framework, path segments and intersections are separated as two arrays, which means either to sort them twice to make them relate to each other or combine them together. Either way will destroy the performance. So the framework is not working well this option and this option is applicable.
 * first bounce intersection cache: this option is not acceptable and applicable when applying anti-aliasing, AA is used for improving rendering quality with only small extra cost, which can be proved from the chart above. 
 * stochastic antialising: use trivial cost and improve the rendering quality. Worth to do.
 
@@ -136,8 +134,6 @@ See `scenes/test_motion_blur.txt` for input details.
 
 During interpolation, destination posture has higher possibility(10%) to be choosen. This will make the object look like ending up somewhere instead of floating all around.
 
-Future : faster interpolation
-
 
 ## Texture Mapping and Bump Mapping
 Implemention of cube and sphere UV coordinates mapping and normal mapping. 
@@ -183,7 +179,9 @@ But procedural texture has benefits like: infinite resolution, easily generating
 Reference: https://en.wikipedia.org/wiki/Procedural_texture.
 
 ## Constructive Solid Geometry **not fully implemented**
-Reference : slides from CIS560 computer graphics.
+References : (under `references` folder)
+* slides from CIS560 computer graphics.
+* *Blister: GPU-based rendering of Boolean combinations of free-form triangulated shapes*
 
 | A - B | B - A|
 |------|------|
@@ -192,10 +190,49 @@ Reference : slides from CIS560 computer graphics.
 |A Union B| A Intersect B|
 |------|------|
 |![](renderings/csg_union_test.png)|![](renderings/csg_intersect_test.png)|
-**Testing for basic ops correctness, low iterations.**
+**Testing for basic ops correctness, only low iterations.**
 * Basic operations testings: A is a red cube, B is a green sphere. Hardcoded, to-do: build tree.
 * Test renderings: ~ 200 iterations.
-* Build entire stucture in reference paper requires much longer time... need to study the paper.
+* Build entire stucture in reference paper requires much longer time... need to study the paper more.
+ 
+
+## Performance Analysis
+
+### Toggleable Methods of First Bounce Intersection Cache and Sort by Material ID
+Refer to section ***Basic Features***.
+
+### Influence of Stream Compaction
+![](performance_analysis/stream_compaction.png)
+
+Above data is collected using `test_stream_compation.txt` as input file. (under `scenes` folder)
+
+When applying stream compaction, the iteration execution time will be smaller than without stream compaction (under same test scene).
+Since a lot of terminated rays are removed and not able to launch extra kernel calls, the averaged execution time reduces.
+
+### Number of Unterminated Rays in Closed / Open Scene
+![](performance_analysis/open_closed_scene.png)
+
+Above data is collected using `text_closed_scene.txt` as input file. (under `scenes` folder)
+
+The closed scene was constructed by adding an extra front wall to form a closed scene. The ray will not be easily escape from the scene compared with open scene setting. Even though stream compaction is applied,  most rays will remain active with the increase the ray depth, stream compaction did not comtribute too much to the overall performace.
+
+In conclusion, stream compation is usefull if a lot of rays will be terminated during the increase of ray depth. But if the rays remain active for a long ray depth, stream compation doesn't help a lot.
+
+### NSight Charts and Analysis
+
+Using NSight for performance analysis, we can get timeline as:
+
+![timeline](performance_analysis/timeline.PNG)
+
+and also a summary of total time of different launched kernel  functions:
+
+![summary](performance_analysis/Cuda_summary.PNG)
+
+From these analysis, kernel function `pathTraceOneBounce` took more than half of the total execution time. This function is used to calculate the intersections of the path rays. In this function, depending on the differrent types of geometries, computation time will vary a lot. It might be easied to compute the intersection of sphere compared with the intersection of CSG object (even though only the basic operations). SO threads of this function is very likely not finished at the same time. There should be a lot of optimization in the future.
+
+Same reason, `shadingAndEvaluatingBSDF` will compute the scattered path ray according to the material type. This function also took a a lot of computation resources.
 
 
-## Future: optimization
+
+
+
