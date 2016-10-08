@@ -6,7 +6,8 @@ CUDA Path Tracer
 * Zimeng Yang
 * Tested on: Windows 10, i7-4850 @ 2.3GHz 16GB, GT 750M (Personal Laptop)
 
-## Roadmap
+Features
+======
 * [x] Basic 
   * [x] BSDF evaluation : diffuse, perfect specular and imperfect specular surface
   * [x] path termination using stream compaction
@@ -18,7 +19,8 @@ CUDA Path Tracer
   * [x] Texture Mapping and Bump Mapping
   * [ ] Constructive Solid Geometry (not fully implemented)
 
-## Overview
+Overview
+======
 ![](renderings/overview.png)
 
 Above rendering is demonstrating features that include diffuse/reflective/refractive(Fresnel) materials, differently textured cube/sphere with normal mapping, motion blur(the shaking red cube) and Constructive Solid Geometry(not real, only basic ideas).
@@ -39,7 +41,8 @@ In above renderings, right image is for illustrating the effects of normal mappi
 All features mentioned above can be modified in input file. See below for details.  
 
 
-## Basic Features
+Basic Features
+======
 ### Diffuse, Non Perfect Specular, Refraction and Weighted Material
 
 | transmission test (with AA)|
@@ -77,7 +80,8 @@ In following chart, only one optimization was applied for each test case. None m
 * stochastic antialising: use trivial cost and improve the rendering quality. Worth to do.
 
 
-## Fresnel Refraction & Stochastic Antialiasing & Depth of Field
+Fresnel Refraction & Stochastic Antialiasing & Depth of Field
+======
 ### Fresnel Refraction using Schlick's Approximation
 Implement a Fresnel Effect refraction evaluation using [Schlick's Approximation](https://en.wikipedia.org/wiki/Schlick%27s_approximation).
 In the following rendering, right sphere is rendered using Fresnel refraction effect. Left sphere is rendered with 0.2 refraction + 0.1 reflection and 0.7 diffuse. Fresnel effect can better approximate the reflection contribution between two media.
@@ -98,6 +102,8 @@ DOF   1 10.5
 ```
 First variable means len radius, second means focal length.
 
+Reference: PBRT [6.2.3].
+
 ### Stochastic antialiasing:
 
 |with AA| without AA|
@@ -109,7 +115,8 @@ For the detail comparison:
 ![](renderings/AA_Comp.png)
 
 
-## Motion Blur
+Motion Blur
+======
 |rotation + translation|scale + translation + non Motion Blur object|
 |------|------|
 |![](renderings/motion_blur1.png)|![](renderings/motion_blur2.png)|
@@ -135,7 +142,8 @@ See `scenes/test_motion_blur.txt` for input details.
 During interpolation, destination posture has higher possibility(10%) to be choosen. This will make the object look like ending up somewhere instead of floating all around.
 
 
-## Texture Mapping and Bump Mapping
+Texture Mapping and Bump Mapping
+======
 Implemention of cube and sphere UV coordinates mapping and normal mapping. 
 
 |texture mapping only|texture mapping and normal mapping|
@@ -155,7 +163,7 @@ For now, things can be done:
 * Specify input texture file in input file, "NULL" means no texture(or normal mapping texture).
 * Use [stb_image](https://github.com/nothings/stb). The same thing as image class in framework.
 
-Reference: pbrt and https://en.wikipedia.org/wiki/Bump_mapping.
+Reference: PBRT[10.4 & 10.5.2] and https://en.wikipedia.org/wiki/Bump_mapping.
 ```
 ....
 REFRIOR     0
@@ -178,7 +186,9 @@ But procedural texture has benefits like: infinite resolution, easily generating
 
 Reference: https://en.wikipedia.org/wiki/Procedural_texture.
 
-## Constructive Solid Geometry **not fully implemented**
+
+Constructive Solid Geometry **not fully implemented**
+======
 References : (under `references` folder)
 * slides from CIS560 computer graphics.
 * *Blister: GPU-based rendering of Boolean combinations of free-form triangulated shapes*
@@ -196,8 +206,8 @@ References : (under `references` folder)
 * Build entire stucture in reference paper requires much longer time... need to study the paper more.
  
 
-## Performance Analysis
-
+Performance Analysis
+======
 ### Toggleable Methods of First Bounce Intersection Cache and Sort by Material ID
 Refer to section ***Basic Features***.
 
@@ -231,8 +241,4 @@ and also a summary of total time of different launched kernel  functions:
 From these analysis, kernel function `pathTraceOneBounce` took more than half of the total execution time. This function is used to calculate the intersections of the path rays. In this function, depending on the differrent types of geometries, computation time will vary a lot. It might be easied to compute the intersection of sphere compared with the intersection of CSG object (even though only the basic operations). SO threads of this function is very likely not finished at the same time. There should be a lot of optimization in the future.
 
 Same reason, `shadingAndEvaluatingBSDF` will compute the scattered path ray according to the material type. This function also took a a lot of computation resources.
-
-
-
-
 
